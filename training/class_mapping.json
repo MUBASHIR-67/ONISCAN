@@ -1,0 +1,28 @@
+{
+    "target_classes": [
+        "acceptable",
+        "damaged",
+        "visible_rot",
+        "sprouted"
+    ],
+    "sources": {
+        "local_bad_onion": {
+            "source_path": "dataset/raw/bad_onion",
+            "source_license": "CC BY 4.0",
+            "source_classes": ["bad-onion"],
+            "mapping": {
+                "bad-onion": null
+            },
+            "status": "manual_review_required",
+            "notes": "The generic bad-onion label is not mapped automatically to damaged, visible_rot, or sprouted. Review bulb imagery and annotation policy before assigning a target class."
+        },
+        "local_onion_quality_preparation": {
+            "source_path": "dataset/onion_quality",
+            "source_license": "Inherited source licenses; verify per image before use",
+            "source_classes": ["acceptable", "bad-onion", "visible-rot", "sprouted"],
+            "mapping": {},
+            "status": "not_ready",
+            "notes": "Preparation metadata exists, but this directory is not treated as an approved labeled source until its images and labels pass validation and manual review."
+        }
+    }
+}

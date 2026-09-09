@@ -1,0 +1,78 @@
+{
+    "id": "enam-onion-commodity-parameters",
+    "name": "e-NAM Onion Commodity Parameters",
+    "source": {
+        "publisher": "e-NAM / Directorate of Marketing and Inspection (DMI)",
+        "url": "https://enam.gov.in/web/assest/download/sul/247_commodity_parameters.pdf",
+        "note": "Configured from the referenced Onion commodity-parameters table. Confirm the applicable procurement interpretation with the responsible assayer before operational use."
+    },
+    "range_names": ["Range-I", "Range-II", "Range-III"],
+    "required_verified_fields": ["cut_pct", "double_split_pct", "sprouted_pct", "rooting_pct", "size_mm"],
+    "rules": {
+        "cut_pct": {
+            "label": "Cut (5-15 mm long)",
+            "unit": "% by count",
+            "type": "maximum",
+            "ranges": {
+                "Range-I": {"max": 5.0},
+                "Range-II": {"max": 10.0},
+                "Range-III": {"max": 15.0}
+            }
+        },
+        "double_split_pct": {
+            "label": "Double split",
+            "unit": "% by count",
+            "type": "maximum/official notation",
+            "ranges": {
+                "Range-I": {"max": 2.0},
+                "Range-II": {"max": 5.0},
+                "Range-III": {"min_exclusive": 8.0}
+            }
+        },
+        "sprouted_pct": {
+            "label": "Sprouted",
+            "unit": "% by count",
+            "type": "maximum/official notation",
+            "ranges": {
+                "Range-I": {"max": 2.0},
+                "Range-II": {"max": 5.0},
+                "Range-III": {"min_exclusive": 8.0}
+            }
+        },
+        "rooting_pct": {
+            "label": "Rooting",
+            "unit": "% by count",
+            "type": "maximum/official notation",
+            "ranges": {
+                "Range-I": {"max": 2.0},
+                "Range-II": {"max": 5.0},
+                "Range-III": {"min_exclusive": 8.0}
+            }
+        },
+        "size_mm": {
+            "label": "Size (maximum diameter of equatorial section)",
+            "unit": "mm",
+            "type": "official table notation",
+            "requires_human_interpretation": true,
+            "ranges": {
+                "Range-I": {"max": 65.0},
+                "Range-II": {"max": 45.0},
+                "Range-III": {"max": 25.0}
+            }
+        },
+        "colour_score": {
+            "label": "Colour characteristic true to variety",
+            "unit": "visual score (1-100)",
+            "optional": true,
+            "ranges": {
+                "Range-I": {"min_exclusive": 70.0},
+                "Range-II": {"min": 40.0, "max": 70.0},
+                "Range-III": {"max_exclusive": 40.0}
+            }
+        }
+    },
+    "grading_policy": {
+        "human_selected_range_required": true,
+        "reason": "ONI-SCAN does not infer a procurement range from AI detections; a qualified human must verify observations and select the official range."
+    }
+}

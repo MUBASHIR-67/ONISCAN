@@ -1,0 +1,820 @@
+[
+  {
+    "inspection_id": "inspection-300194e34f414fc38be482d6471a38e5",
+    "timestamp": "2026-09-08T14:34:33.835685+00:00",
+    "uploaded_filename": "sample.jpg",
+    "inspection_status": "Analysis Complete",
+    "ai_observations": {
+      "total_detected": 1,
+      "average_confidence": 0.691,
+      "class_counts": {
+        "acceptable": 0,
+        "damaged": 0,
+        "visible_rot": 0,
+        "sprouted": 0
+      },
+      "raw_class_counts": {
+        "bad-onion": 1
+      },
+      "percentages": {
+        "acceptable": 0.0,
+        "damaged": 0.0,
+        "visible_rot": 0.0,
+        "sprouted": 0.0
+      },
+      "detections": [
+        {
+          "class": "bad-onion",
+          "confidence": 0.691,
+          "box": [
+            243.7,
+            115.5,
+            431.1,
+            445.0
+          ],
+          "size": {
+            "width_px": 187.39,
+            "height_px": 329.52,
+            "diameter_px": 268.05,
+            "diameter_mm": null,
+            "calibrated": false
+          }
+        }
+      ],
+      "confidence_values": [
+        0.691
+      ]
+    },
+    "size_measurements": [
+      {
+        "width_px": 187.39,
+        "height_px": 329.52,
+        "diameter_px": 268.05,
+        "diameter_mm": null,
+        "calibrated": false
+      }
+    ],
+    "calibration": {
+      "reference_width_mm": 0.0,
+      "reference_width_px": -4.0,
+      "pixels_per_mm": null,
+      "calibrated": false,
+      "status": "Calibration unavailable: supplied reference values are invalid.",
+      "automatic_reference_detection": "Not implemented (future functionality)"
+    },
+    "human_verification": {
+      "status": "Pending"
+    },
+    "verified_observations": {},
+    "grading_result": {
+      "status": "pending_verification",
+      "range": null,
+      "reasons": []
+    },
+    "result_image": "/uploads/9a1805ab8d9a45b6ad99f48b8593b143_result.jpg",
+    "report_limitations": [
+      "AI identifies visible characteristics from the submitted images.",
+      "Visible rot refers to externally visible characteristics and does not establish internal rot.",
+      "Final procurement classification requires verification against the applicable standard."
+    ]
+  },
+  {
+    "inspection_id": "inspection-6a9ef1fcc014433095af5b00127cc7f9",
+    "timestamp": "2026-09-08T14:34:33.776858+00:00",
+    "uploaded_filename": "sample.jpg",
+    "inspection_status": "Analysis Complete",
+    "ai_observations": {
+      "total_detected": 1,
+      "average_confidence": 0.691,
+      "class_counts": {
+        "acceptable": 0,
+        "damaged": 0,
+        "visible_rot": 0,
+        "sprouted": 0
+      },
+      "raw_class_counts": {
+        "bad-onion": 1
+      },
+      "percentages": {
+        "acceptable": 0.0,
+        "damaged": 0.0,
+        "visible_rot": 0.0,
+        "sprouted": 0.0
+      },
+      "detections": [
+        {
+          "class": "bad-onion",
+          "confidence": 0.691,
+          "box": [
+            243.7,
+            115.5,
+            431.1,
+            445.0
+          ],
+          "size": {
+            "width_px": 187.39,
+            "height_px": 329.52,
+            "diameter_px": 268.05,
+            "diameter_mm": null,
+            "calibrated": false
+          }
+        }
+      ],
+      "confidence_values": [
+        0.691
+      ]
+    },
+    "size_measurements": [
+      {
+        "width_px": 187.39,
+        "height_px": 329.52,
+        "diameter_px": 268.05,
+        "diameter_mm": null,
+        "calibrated": false
+      }
+    ],
+    "calibration": {
+      "reference_width_mm": null,
+      "reference_width_px": null,
+      "pixels_per_mm": null,
+      "calibrated": false,
+      "status": "Calibration required",
+      "automatic_reference_detection": "Not implemented (future functionality)"
+    },
+    "human_verification": {
+      "status": "Pending"
+    },
+    "verified_observations": {},
+    "grading_result": {
+      "status": "pending_verification",
+      "range": null,
+      "reasons": []
+    },
+    "result_image": "/uploads/79f9e8a6474d4ad69ff878fad1705ec6_result.jpg",
+    "report_limitations": [
+      "AI identifies visible characteristics from the submitted images.",
+      "Visible rot refers to externally visible characteristics and does not establish internal rot.",
+      "Final procurement classification requires verification against the applicable standard."
+    ]
+  },
+  {
+    "inspection_id": "inspection-41a57371c4a143ff9e45611dfe2c7101",
+    "timestamp": "2026-09-08T14:34:14.339252+00:00",
+    "uploaded_filename": "asdfghjkl-16-_jpg.rf.d20d9006328ebb1a7a47c2875ac557e5.jpg",
+    "inspection_status": "Finalized",
+    "ai_observations": {
+      "total_detected": 1,
+      "average_confidence": 0.691,
+      "class_counts": {
+        "acceptable": 0,
+        "damaged": 0,
+        "visible_rot": 0,
+        "sprouted": 0
+      },
+      "raw_class_counts": {
+        "bad-onion": 1
+      },
+      "percentages": {
+        "acceptable": 0.0,
+        "damaged": 0.0,
+        "visible_rot": 0.0,
+        "sprouted": 0.0
+      },
+      "detections": [
+        {
+          "class": "bad-onion",
+          "confidence": 0.691,
+          "box": [
+            243.7,
+            115.5,
+            431.1,
+            445.0
+          ],
+          "size": {
+            "width_px": 187.39,
+            "height_px": 329.52,
+            "diameter_px": 268.05,
+            "diameter_mm": 53.61,
+            "calibrated": true
+          }
+        }
+      ],
+      "confidence_values": [
+        0.691
+      ]
+    },
+    "size_measurements": [
+      {
+        "width_px": 187.39,
+        "height_px": 329.52,
+        "diameter_px": 268.05,
+        "diameter_mm": 53.61,
+        "calibrated": true
+      }
+    ],
+    "calibration": {
+      "reference_width_mm": 50.0,
+      "reference_width_px": 250.0,
+      "pixels_per_mm": 5.0,
+      "calibrated": true,
+      "status": "Calibrated from supplied reference object.",
+      "automatic_reference_detection": "Not implemented (future functionality)"
+    },
+    "human_verification": {
+      "status": "verified"
+    },
+    "verified_observations": {
+      "cut_pct": 2,
+      "double_split_pct": 1,
+      "sprouted_pct": 1,
+      "rooting_pct": 1,
+      "size_mm": 60,
+      "selected_range": "Range-I"
+    },
+    "grading_result": {
+      "status": "graded",
+      "range": "Range-I",
+      "reasons": [
+        "Human-verified observations satisfy the configured Range-I bounds."
+      ],
+      "checks": [
+        {
+          "field": "cut_pct",
+          "label": "Cut (5-15 mm long)",
+          "value": 2,
+          "passed": true,
+          "detail": "within configured bound"
+        },
+        {
+          "field": "double_split_pct",
+          "label": "Double split",
+          "value": 1,
+          "passed": true,
+          "detail": "within configured bound"
+        },
+        {
+          "field": "sprouted_pct",
+          "label": "Sprouted",
+          "value": 1,
+          "passed": true,
+          "detail": "within configured bound"
+        },
+        {
+          "field": "rooting_pct",
+          "label": "Rooting",
+          "value": 1,
+          "passed": true,
+          "detail": "within configured bound"
+        },
+        {
+          "field": "size_mm",
+          "label": "Size (maximum diameter of equatorial section)",
+          "value": 60,
+          "passed": true,
+          "detail": "within configured bound"
+        }
+      ]
+    },
+    "result_image": "/uploads/3d2c58d7dbf443d29046ce31134313e0_result.jpg",
+    "report_limitations": [
+      "AI identifies visible characteristics from the submitted images.",
+      "Visible rot refers to externally visible characteristics and does not establish internal rot.",
+      "Final procurement classification requires verification against the applicable standard."
+    ],
+    "finalized_at": "2026-09-08T14:34:14.493150+00:00"
+  },
+  {
+    "inspection_id": "inspection-cfbe566d557a45468f8108131f88360d",
+    "timestamp": "2026-09-07T17:31:29.189127+00:00",
+    "uploaded_filename": "detected_onion.jpg",
+    "inspection_status": "Finalized",
+    "ai_observations": {
+      "total_detected": 1,
+      "average_confidence": 0.646,
+      "class_counts": {
+        "acceptable": 0,
+        "damaged": 0,
+        "visible_rot": 0,
+        "sprouted": 0
+      },
+      "raw_class_counts": {
+        "bad-onion": 1
+      },
+      "percentages": {
+        "acceptable": 0.0,
+        "damaged": 0.0,
+        "visible_rot": 0.0,
+        "sprouted": 0.0
+      },
+      "detections": [
+        {
+          "class": "bad-onion",
+          "confidence": 0.646,
+          "box": [
+            1.7,
+            2.2,
+            151.9,
+            161.4
+          ],
+          "size": {
+            "width_px": 150.25,
+            "height_px": 159.13,
+            "diameter_px": 154.75,
+            "diameter_mm": 30.95,
+            "calibrated": true
+          }
+        }
+      ],
+      "confidence_values": [
+        0.646
+      ]
+    },
+    "size_measurements": [
+      {
+        "width_px": 150.25,
+        "height_px": 159.13,
+        "diameter_px": 154.75,
+        "diameter_mm": 30.95,
+        "calibrated": true
+      }
+    ],
+    "calibration": {
+      "reference_width_mm": 50.0,
+      "reference_width_px": 250.0,
+      "pixels_per_mm": 5.0,
+      "calibrated": true,
+      "status": "Calibrated from supplied reference object.",
+      "automatic_reference_detection": "Not implemented (future functionality)"
+    },
+    "human_verification": {
+      "status": "verified"
+    },
+    "verified_observations": {
+      "cut_pct": 2,
+      "double_split_pct": 1,
+      "sprouted_pct": 1,
+      "rooting_pct": 1,
+      "size_mm": 60,
+      "selected_range": "Range-I"
+    },
+    "grading_result": {
+      "status": "graded",
+      "range": "Range-I",
+      "reasons": [
+        "Human-verified observations satisfy the configured Range-I bounds."
+      ],
+      "checks": [
+        {
+          "field": "cut_pct",
+          "label": "Cut (5-15 mm long)",
+          "value": 2,
+          "passed": true,
+          "detail": "within configured bound"
+        },
+        {
+          "field": "double_split_pct",
+          "label": "Double split",
+          "value": 1,
+          "passed": true,
+          "detail": "within configured bound"
+        },
+        {
+          "field": "sprouted_pct",
+          "label": "Sprouted",
+          "value": 1,
+          "passed": true,
+          "detail": "within configured bound"
+        },
+        {
+          "field": "rooting_pct",
+          "label": "Rooting",
+          "value": 1,
+          "passed": true,
+          "detail": "within configured bound"
+        },
+        {
+          "field": "size_mm",
+          "label": "Size (maximum diameter of equatorial section)",
+          "value": 60,
+          "passed": true,
+          "detail": "within configured bound"
+        }
+      ]
+    },
+    "result_image": "/uploads/ba058658a6064342ba4e4d4c23c1cf37_result.jpg",
+    "report_limitations": [
+      "AI identifies visible characteristics from the submitted images.",
+      "Visible rot refers to externally visible characteristics and does not establish internal rot.",
+      "Final procurement classification requires verification against the applicable standard."
+    ],
+    "finalized_at": "2026-09-07T17:31:29.886725+00:00"
+  },
+  {
+    "inspection_id": "inspection-169474c85ca242518c35b8fae7988270",
+    "timestamp": "2026-09-07T17:25:29.021486+00:00",
+    "uploaded_filename": "detected_onion.jpg",
+    "inspection_status": "Analysis Complete",
+    "ai_observations": {
+      "total_detected": 1,
+      "average_confidence": 0.646,
+      "class_counts": {
+        "acceptable": 0,
+        "damaged": 0,
+        "visible_rot": 0,
+        "sprouted": 0
+      },
+      "raw_class_counts": {
+        "bad-onion": 1
+      },
+      "percentages": {
+        "acceptable": 0.0,
+        "damaged": 0.0,
+        "visible_rot": 0.0,
+        "sprouted": 0.0
+      },
+      "detections": [
+        {
+          "class": "bad-onion",
+          "confidence": 0.646,
+          "box": [
+            1.7,
+            2.2,
+            151.9,
+            161.4
+          ],
+          "size": {
+            "width_px": 150.25,
+            "height_px": 159.13,
+            "diameter_px": 154.75,
+            "diameter_mm": null,
+            "calibrated": false
+          }
+        }
+      ],
+      "confidence_values": [
+        0.646
+      ]
+    },
+    "size_measurements": [
+      {
+        "width_px": 150.25,
+        "height_px": 159.13,
+        "diameter_px": 154.75,
+        "diameter_mm": null,
+        "calibrated": false
+      }
+    ],
+    "calibration": {
+      "reference_width_mm": null,
+      "reference_width_px": null,
+      "pixels_per_mm": null,
+      "calibrated": false,
+      "status": "Calibration required",
+      "automatic_reference_detection": "Not implemented (future functionality)"
+    },
+    "human_verification": {
+      "status": "Pending"
+    },
+    "verified_observations": {},
+    "grading_result": {
+      "status": "pending_verification",
+      "range": null,
+      "reasons": []
+    },
+    "result_image": "/uploads/5d61232581934d5c8b20eef7a604f5a5_result.jpg",
+    "report_limitations": [
+      "AI identifies visible characteristics from the submitted images.",
+      "Visible rot refers to externally visible characteristics and does not establish internal rot.",
+      "Final procurement classification requires verification against the applicable standard."
+    ]
+  },
+  {
+    "inspection_id": "inspection-4908dfa52bd44b31b88dd896f6896f3c",
+    "timestamp": "2026-09-07T17:18:19.421249+00:00",
+    "uploaded_filename": "detected_onion.jpg",
+    "inspection_status": "Graded",
+    "ai_observations": {
+      "total_detected": 1,
+      "average_confidence": 0.646,
+      "class_counts": {
+        "acceptable": 0,
+        "damaged": 0,
+        "visible_rot": 0,
+        "sprouted": 0
+      },
+      "raw_class_counts": {
+        "bad-onion": 1
+      },
+      "percentages": {
+        "acceptable": 0.0,
+        "damaged": 0.0,
+        "visible_rot": 0.0,
+        "sprouted": 0.0
+      },
+      "detections": [
+        {
+          "class": "bad-onion",
+          "confidence": 0.646,
+          "box": [
+            1.7,
+            2.2,
+            151.9,
+            161.4
+          ],
+          "size": {
+            "width_px": 150.25,
+            "height_px": 159.13,
+            "diameter_px": 154.75,
+            "diameter_mm": null,
+            "calibrated": false
+          }
+        }
+      ],
+      "confidence_values": [
+        0.646
+      ]
+    },
+    "size_measurements": [
+      {
+        "width_px": 150.25,
+        "height_px": 159.13,
+        "diameter_px": 154.75,
+        "diameter_mm": null,
+        "calibrated": false
+      }
+    ],
+    "calibration": {
+      "reference_width_mm": null,
+      "reference_width_px": null,
+      "pixels_per_mm": null,
+      "calibrated": false,
+      "status": "Calibration required",
+      "automatic_reference_detection": "Not implemented (future functionality)"
+    },
+    "human_verification": {
+      "status": "verified"
+    },
+    "verified_observations": {
+      "cut_pct": 2,
+      "double_split_pct": 1,
+      "sprouted_pct": 1,
+      "rooting_pct": 1,
+      "size_mm": 60,
+      "selected_range": "Range-I"
+    },
+    "grading_result": {
+      "status": "graded",
+      "range": "Range-I",
+      "reasons": [
+        "Human-verified observations satisfy the configured Range-I bounds."
+      ],
+      "checks": [
+        {
+          "field": "cut_pct",
+          "label": "Cut (5-15 mm long)",
+          "value": 2,
+          "passed": true,
+          "detail": "within configured bound"
+        },
+        {
+          "field": "double_split_pct",
+          "label": "Double split",
+          "value": 1,
+          "passed": true,
+          "detail": "within configured bound"
+        },
+        {
+          "field": "sprouted_pct",
+          "label": "Sprouted",
+          "value": 1,
+          "passed": true,
+          "detail": "within configured bound"
+        },
+        {
+          "field": "rooting_pct",
+          "label": "Rooting",
+          "value": 1,
+          "passed": true,
+          "detail": "within configured bound"
+        },
+        {
+          "field": "size_mm",
+          "label": "Size (maximum diameter of equatorial section)",
+          "value": 60,
+          "passed": true,
+          "detail": "within configured bound"
+        }
+      ]
+    },
+    "result_image": "/uploads/830303219ee64cabb72b545fc099b075_result.jpg",
+    "report_limitations": [
+      "AI identifies visible characteristics from the submitted images.",
+      "Visible rot refers to externally visible characteristics and does not establish internal rot.",
+      "Final procurement classification requires verification against the applicable standard."
+    ]
+  },
+  {
+    "inspection_id": "inspection-1c6bbfb602924a46937ddabf6697acab",
+    "timestamp": "2026-09-07T17:17:13.119094+00:00",
+    "uploaded_filename": "detected_onion.jpg",
+    "inspection_status": "Analysis Complete",
+    "ai_observations": {
+      "total_detected": 1,
+      "average_confidence": 0.646,
+      "class_counts": {
+        "acceptable": 0,
+        "damaged": 0,
+        "visible_rot": 0,
+        "sprouted": 0
+      },
+      "raw_class_counts": {
+        "bad-onion": 1
+      },
+      "percentages": {
+        "acceptable": 0.0,
+        "damaged": 0.0,
+        "visible_rot": 0.0,
+        "sprouted": 0.0
+      },
+      "detections": [
+        {
+          "class": "bad-onion",
+          "confidence": 0.646,
+          "box": [
+            1.7,
+            2.2,
+            151.9,
+            161.4
+          ],
+          "size": {
+            "width_px": 150.25,
+            "height_px": 159.13,
+            "diameter_px": 154.75,
+            "diameter_mm": null,
+            "calibrated": false
+          }
+        }
+      ],
+      "confidence_values": [
+        0.646
+      ]
+    },
+    "size_measurements": [
+      {
+        "width_px": 150.25,
+        "height_px": 159.13,
+        "diameter_px": 154.75,
+        "diameter_mm": null,
+        "calibrated": false
+      }
+    ],
+    "calibration": {
+      "reference_width_mm": null,
+      "reference_width_px": null,
+      "pixels_per_mm": null,
+      "calibrated": false,
+      "status": "Calibration required",
+      "automatic_reference_detection": "Not implemented (future functionality)"
+    },
+    "human_verification": {
+      "status": "Pending"
+    },
+    "verified_observations": {},
+    "grading_result": {
+      "status": "pending_verification",
+      "range": null,
+      "reasons": []
+    },
+    "result_image": "/uploads/87ec7be3fec549119589f2b11ec42d53_result.jpg",
+    "report_limitations": [
+      "AI identifies visible characteristics from the submitted images.",
+      "Visible rot refers to externally visible characteristics and does not establish internal rot.",
+      "Final procurement classification requires verification against the applicable standard."
+    ]
+  },
+  {
+    "inspection_id": "inspection-cb3f5b1ebd104f9ca9e4124b308beca7",
+    "timestamp": "2026-09-07T17:13:16.607162+00:00",
+    "uploaded_filename": "detected_onion.jpg",
+    "inspection_status": "Graded",
+    "ai_observations": {
+      "total_detected": 1,
+      "average_confidence": 0.646,
+      "class_counts": {
+        "acceptable": 0,
+        "damaged": 0,
+        "visible_rot": 0,
+        "sprouted": 0
+      },
+      "raw_class_counts": {
+        "bad-onion": 1
+      },
+      "percentages": {
+        "acceptable": 0.0,
+        "damaged": 0.0,
+        "visible_rot": 0.0,
+        "sprouted": 0.0
+      },
+      "detections": [
+        {
+          "class": "bad-onion",
+          "confidence": 0.646,
+          "box": [
+            1.7,
+            2.2,
+            151.9,
+            161.4
+          ],
+          "size": {
+            "width_px": 150.25,
+            "height_px": 159.13,
+            "diameter_px": 154.75,
+            "diameter_mm": 30.95,
+            "calibrated": true
+          }
+        }
+      ],
+      "confidence_values": [
+        0.646
+      ]
+    },
+    "size_measurements": [
+      {
+        "width_px": 150.25,
+        "height_px": 159.13,
+        "diameter_px": 154.75,
+        "diameter_mm": 30.95,
+        "calibrated": true
+      }
+    ],
+    "calibration": {
+      "reference_width_mm": 50.0,
+      "reference_width_px": 250.0,
+      "pixels_per_mm": 5.0,
+      "calibrated": true,
+      "status": "Calibrated from supplied reference object.",
+      "automatic_reference_detection": "Not implemented (future functionality)"
+    },
+    "human_verification": {
+      "status": "verified"
+    },
+    "verified_observations": {
+      "cut_pct": 2,
+      "double_split_pct": 1,
+      "sprouted_pct": 1,
+      "rooting_pct": 1,
+      "size_mm": 60,
+      "selected_range": "Range-I"
+    },
+    "grading_result": {
+      "status": "graded",
+      "range": "Range-I",
+      "reasons": [
+        "Human-verified observations satisfy the configured Range-I bounds."
+      ],
+      "checks": [
+        {
+          "field": "cut_pct",
+          "label": "Cut (5-15 mm long)",
+          "value": 2,
+          "passed": true,
+          "detail": "within configured bound"
+        },
+        {
+          "field": "double_split_pct",
+          "label": "Double split",
+          "value": 1,
+          "passed": true,
+          "detail": "within configured bound"
+        },
+        {
+          "field": "sprouted_pct",
+          "label": "Sprouted",
+          "value": 1,
+          "passed": true,
+          "detail": "within configured bound"
+        },
+        {
+          "field": "rooting_pct",
+          "label": "Rooting",
+          "value": 1,
+          "passed": true,
+          "detail": "within configured bound"
+        },
+        {
+          "field": "size_mm",
+          "label": "Size (maximum diameter of equatorial section)",
+          "value": 60,
+          "passed": true,
+          "detail": "within configured bound"
+        }
+      ]
+    },
+    "result_image": "/uploads/8f7e89740d61483c87718f1419d31059_result.jpg",
+    "report_limitations": [
+      "AI identifies visible characteristics from the submitted images.",
+      "Visible rot refers to externally visible characteristics and does not establish internal rot.",
+      "Final procurement classification requires verification against the applicable standard."
+    ]
+  }
+]

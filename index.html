@@ -1,0 +1,2166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ONI-SCAN | AI Onion Quality Inspection</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: Arial, sans-serif;
+            min-height: 100vh;
+            color: #f5f7ff;
+            background:
+                radial-gradient(circle at 20% 20%, rgba(80, 120, 255, .18), transparent 30%),
+                radial-gradient(circle at 80% 70%, rgba(180, 70, 255, .15), transparent 30%),
+                #070914;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            width: 600px;
+            height: 600px;
+            border-radius: 50%;
+            background: rgba(90, 110, 255, .08);
+            filter: blur(80px);
+            animation: float 8s ease-in-out infinite alternate;
+            pointer-events: none;
+        }
+
+        @keyframes float {
+            from { transform: translate(0, 0); }
+            to { transform: translate(250px, 150px); }
+        }
+
+        .app { display: flex; min-height: 100vh; }
+
+        .sidebar {
+            width: 250px;
+            padding: 28px 18px;
+            background: rgba(10, 13, 28, .82);
+            backdrop-filter: blur(20px);
+            border-right: 1px solid rgba(255,255,255,.08);
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            z-index: 20;
+        }
+
+        .logo { font-size: 25px; font-weight: 800; margin-bottom: 40px; }
+        .logo span { color: #7c8cff; }
+
+        .nav { display: flex; flex-direction: column; gap: 10px; }
+        .nav button {
+            border: 0; background: transparent; color: #9da4bd; padding: 14px; border-radius: 12px;
+            text-align: left; cursor: pointer; font-size: 15px; transition: .25s;
+        }
+        .nav button:hover, .nav button.active {
+            background: rgba(124, 140, 255, .15); color: white; transform: translateX(4px);
+        }
+
+        main {
+            margin-left: 250px;
+            width: calc(100% - 250px);
+            padding: 35px;
+        }
+
+        .topbar { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 35px; }
+        .topbar-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: flex-end; }
+        .status {
+            padding: 9px 14px; border-radius: 20px; background: rgba(70, 220, 140, .1);
+            border: 1px solid rgba(70, 220, 140, .25); color: #67e8a3; font-size: 13px;
+        }
+        .status.analyzing { color: #f5c84b; border-color: rgba(245,200,75,.3); background: rgba(245,200,75,.1); }
+        .status.failed { color: #ff8a8a; border-color: rgba(255,91,103,.3); background: rgba(255,91,103,.1); }
+
+        h1 { font-size: 38px; margin-bottom: 10px; }
+        .subtitle { color: #8f96ad; }
+
+        .cards {
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; margin-bottom: 25px;
+        }
+
+        .card {
+            padding: 23px; border-radius: 18px; background: rgba(20, 24, 45, .7);
+            border: 1px solid rgba(255,255,255,.08); backdrop-filter: blur(15px); transition: .3s;
+        }
+        .card:hover { transform: translateY(-5px); border-color: rgba(124,140,255,.35); }
+        .card small { color: #8f96ad; }
+        .number { font-size: 32px; font-weight: 800; margin-top: 12px; }
+
+        .inspection { display: grid; grid-template-columns: 1.5fr 1fr; gap: 20px; }
+        .panel {
+            background: rgba(15, 19, 37, .8); border: 1px solid rgba(255,255,255,.08);
+            border-radius: 22px; padding: 25px; backdrop-filter: blur(18px);
+        }
+        .panel h2 { margin-bottom: 18px; }
+
+        .dropzone {
+            height: 390px; border: 2px dashed rgba(124,140,255,.4); border-radius: 18px;
+            display: flex; justify-content: center; align-items: center; flex-direction: column;
+            gap: 12px; cursor: pointer; transition: .3s; overflow: hidden; position: relative;
+        }
+        .dropzone:hover { background: rgba(124,140,255,.06); border-color: #7c8cff; }
+        .dropzone input { display: none; }
+        .upload-icon { font-size: 55px; }
+        .preview {
+            position: absolute; inset: 0; width: 100%; height: 100%; display: none; object-fit: contain;
+            z-index: 1; background: #090c18;
+        }
+
+        .scan-line {
+            position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: #7c8cff;
+            box-shadow: 0 0 20px #7c8cff; display: none; animation: scan 0.7s linear infinite;
+            z-index: 999; pointer-events: none;
+        }
+        @keyframes scan { 0% { top: 0; } 100% { top: calc(100% - 4px); } }
+
+        .btn {
+            margin-top: 18px; width: 100%; padding: 15px; border: 0; border-radius: 13px;
+            background: linear-gradient(135deg, #6878ff, #a16cff); color: white; font-weight: 700; cursor: pointer;
+            transition: .25s;
+        }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(100,100,255,.25); }
+        .btn:disabled { opacity: .6; cursor: wait; transform: none; }
+
+        .results { display: flex; flex-direction: column; gap: 13px; }
+        .result {
+            display: flex; justify-content: space-between; align-items: center; padding: 15px;
+            border-radius: 13px; background: rgba(255,255,255,.04);
+        }
+        .label { display: flex; align-items: center; gap: 10px; }
+        .dot { width: 11px; height: 11px; border-radius: 50%; }
+        .green { background: #45df91; }
+        .yellow { background: #f5c84b; }
+        .red { background: #ff5b67; }
+        .purple { background: #a879ff; }
+        .blue { background: #72b7ff; }
+
+        .notice {
+            margin-top: 20px; padding: 13px; border-radius: 12px; background: rgba(245,200,75,.08);
+            border: 1px solid rgba(245,200,75,.2); color: #e8d58b; font-size: 13px; line-height: 1.5;
+        }
+
+        .analysis-status { margin-top: 15px; min-height: 20px; color: #8f96ad; font-size: 13px; text-align: center; }
+
+        .history-list { display: flex; flex-direction: column; gap: 10px; max-height: 300px; overflow: auto; }
+        .history-item {
+            border: 1px solid rgba(255,255,255,.08); background: rgba(255,255,255,.03); border-radius: 12px;
+            padding: 12px 14px; display: flex; justify-content: space-between; gap: 12px; align-items: center; cursor: pointer; transition: .2s;
+        }
+        .history-item:hover { border-color: rgba(124,140,255,.32); transform: translateY(-2px); }
+        .history-meta { display: flex; flex-direction: column; gap: 6px; }
+        .history-status { color: #67e8a3; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
+
+        .analytics-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+        .mini-stat {
+            background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.08); border-radius: 12px;
+            padding: 14px; display: flex; flex-direction: column; gap: 8px;
+        }
+        .mini-stat small { color: #8f96ad; }
+        .mini-stat strong { font-size: 24px; }
+        .analytics-bars { display: grid; gap: 12px; }
+        .analytics-bar-row { display: grid; grid-template-columns: 110px 1fr 52px; gap: 10px; align-items: center; color: #cdd6f7; font-size: 13px; }
+        .analytics-bar-track { height: 10px; border-radius: 999px; background: rgba(255,255,255,.07); overflow: hidden; }
+        .analytics-bar-fill { height: 100%; width: 0%; border-radius: inherit; transition: width .35s ease; }
+        .analytics-empty { color: #8f96ad; padding: 12px 0; }
+        .trend-list { display: grid; gap: 8px; }
+        .trend-row { display: flex; justify-content: space-between; gap: 12px; color: #cdd6f7; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,.06); }
+
+        .report-preview-empty {
+            color: #8f96ad; background: rgba(255,255,255,.02); border: 1px dashed rgba(255,255,255,.12);
+            border-radius: 12px; min-height: 90px; display: grid; place-items: center;
+        }
+
+        .inspection-toolbar {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 14px;
+        }
+        .field {
+            display: flex; flex-direction: column; gap: 8px;
+        }
+        .field label { color: #c9d1ee; font-size: 13px; }
+        .field select, .field input {
+            width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,.08);
+            background: rgba(10, 14, 28, .8); color: white;
+        }
+        .field small { color: #8f96ad; }
+        .progress-track {
+            width: 100%; height: 12px; border-radius: 999px; background: rgba(255,255,255,.06);
+            overflow: hidden; border: 1px solid rgba(255,255,255,.08); margin-top: 10px;
+        }
+        .progress-fill {
+            height: 100%; width: 0%; background: linear-gradient(90deg, #67e8a3, #7c8cff); border-radius: inherit;
+            transition: width .3s ease;
+        }
+        .gallery-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-top: 14px;
+        }
+        .gallery-item {
+            background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.08); border-radius: 12px; overflow: hidden;
+        }
+        .gallery-item img {
+            width: 100%; height: 120px; object-fit: cover; display: block; background: #090d17;
+        }
+        .gallery-item strong {
+            display: block; padding: 10px; font-size: 12px; color: #cdd6f7;
+        }
+        .capability-state {
+            margin-top: 12px; padding: 12px 14px; border-radius: 10px;
+            border: 1px solid rgba(255,255,255,.08); color: #cdd6f7;
+            background: rgba(255,255,255,.03); font-size: 13px;
+        }
+        .onion-records { display: grid; gap: 10px; margin-top: 14px; }
+        .onion-record {
+            display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center;
+            padding: 12px; border: 1px solid rgba(255,255,255,.08); border-radius: 10px;
+            background: rgba(255,255,255,.025);
+        }
+        .onion-record strong { color: #dfe8ff; }
+        .onion-record small { color: #8f96ad; }
+        .detection-overlay { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; }
+        .detection-record { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; padding: 12px; border: 1px solid rgba(255,255,255,.08); border-radius: 10px; background: rgba(255,255,255,.025); }
+        .detection-swatch { width: 11px; height: 11px; border-radius: 50%; }
+        .workflow-state { display:flex; justify-content:space-between; gap:12px; align-items:center; flex-wrap:wrap; margin-top:13px; color:#cdd6f7; }
+        .evidence-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+        .evidence-box { min-width: 0; padding: 12px; border: 1px solid rgba(255,255,255,.08); border-radius: 12px; background: rgba(255,255,255,.025); }
+        .evidence-box h3 { margin-bottom: 10px; font-size: 14px; color: #dfe8ff; }
+        .evidence-image { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: contain; border-radius: 9px; background: #090d17; }
+        .detection-legend { display: flex; flex-wrap: wrap; gap: 12px 18px; margin-top: 16px; color: #cdd6f7; font-size: 13px; }
+        .legend-item { display: inline-flex; align-items: center; gap: 7px; }
+        .low-confidence { display: block; margin-top: 5px; color: #ffcf8a; }
+        .review-flow { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 16px 0; }
+        .review-flow-step { padding: 10px; border-radius: 9px; text-align: center; color: #cdd6f7; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08); font-size: 12px; }
+        .camera-panel { display: grid; gap: 12px; margin-top: 14px; padding: 14px; border: 1px solid rgba(255,255,255,.08); border-radius: 12px; background: rgba(255,255,255,.025); }
+        .camera-preview { display: none; width: 100%; max-height: 260px; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 10px; background: #090d17; }
+        .camera-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+        .camera-actions .btn { flex: 1 1 150px; }
+        .grade-card { display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: center; margin-top: 13px; padding: 14px; border: 1px solid rgba(124,140,255,.25); border-radius: 12px; background: rgba(124,140,255,.08); }
+        .grade-letter { display: grid; place-items: center; width: 54px; height: 54px; border-radius: 12px; background: rgba(103,232,163,.16); color: #b9f7d2; font-size: 30px; font-weight: 800; }
+        .grade-card small { color: #9da4bd; }
+        .demo-flow { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; margin: 0 0 24px; }
+        .demo-flow-step { padding: 11px 8px; border-radius: 10px; text-align: center; color: #cdd6f7; background: rgba(255,255,255,.035); border: 1px solid rgba(255,255,255,.07); font-size: 12px; line-height: 1.3; }
+        .workflow-rail {
+            display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 6px;
+            margin: 0 0 24px; padding: 12px; border: 1px solid rgba(255,255,255,.08);
+            border-radius: 14px; background: rgba(15, 19, 37, .72);
+        }
+        .workflow-step { min-width: 0; padding: 9px 6px; border-radius: 9px; text-align: center; color: #747c98; font-size: 11px; line-height: 1.25; }
+        .workflow-step.active { background: rgba(124,140,255,.18); color: #e8ecff; }
+        .workflow-step.complete { color: #67e8a3; }
+        .workflow-step[hidden] { display: none; }
+
+        .settings-list { display: flex; flex-direction: column; gap: 10px; }
+        .setting-row {
+            display: flex; justify-content: space-between; gap: 12px; padding: 12px 14px; border-radius: 12px;
+            background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.06);
+        }
+        .setting-row span { color: #8f96ad; }
+
+        .modal { position: fixed; inset: 0; background: rgba(5, 8, 18, .72); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 1000; }
+        .modal.hidden { display: none; }
+        .modal-content {
+            width: min(900px, 100%); max-height: 90vh; overflow: auto; background: rgba(13, 17, 31, .96);
+            border: 1px solid rgba(255,255,255,.08); border-radius: 20px; padding: 24px;
+        }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .close-btn {
+            background: rgba(255,255,255,.05); border: 0; color: white; width: 36px; height: 36px;
+            border-radius: 50%; cursor: pointer;
+        }
+        .modal-actions { margin-top: 20px; display: flex; justify-content: flex-end; }
+        .small-btn { width: auto; min-width: 180px; margin-top: 0; }
+        .report-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+        .report-box {
+            background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.08); border-radius: 12px;
+            padding: 16px;
+        }
+        .report-box img {
+            width: 100%; border-radius: 12px; margin-top: 12px; max-height: 250px; object-fit: contain; background: #0a0d18;
+        }
+
+        @media (max-width: 1000px) {
+            .cards { grid-template-columns: repeat(2, 1fr); }
+            .inspection { grid-template-columns: 1fr; }
+            .workflow-rail { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+        }
+
+        @media (max-width: 700px) {
+            .sidebar { width: 70px; }
+            .logo { font-size: 0; }
+            .logo span { font-size: 18px; }
+            .nav button { font-size: 0; }
+            main { margin-left: 70px; width: calc(100% - 70px); padding: 20px; }
+            .cards { grid-template-columns: 1fr; }
+            h1 { font-size: 28px; }
+            .secondary-grid, .report-grid { grid-template-columns: 1fr; }
+            .workflow-rail { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .inspection-toolbar { grid-template-columns: 1fr; }
+            .panel { padding: 18px; border-radius: 16px; }
+            .onion-record, .detection-record { grid-template-columns: 1fr; gap: 7px; }
+            .evidence-grid { grid-template-columns: 1fr; }
+            .review-flow { grid-template-columns: 1fr; }
+            .demo-flow { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .topbar-actions { justify-content: flex-start; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <aside class="sidebar">
+            <div class="logo">🧅 ONI<span>-SCAN</span></div>
+            <div class="nav">
+                <button class="active" data-target="dashboardSection">📊 Dashboard</button>
+                <button data-target="newInspectionSection">🔍 New Inspection</button>
+                <button data-target="historySection">📋 Inspection History</button>
+                <button data-target="analyticsSection">📈 Analytics</button>
+                <button data-target="reportSection">📄 Reports</button>
+                <button data-target="settingsSection">⚙️ Settings</button>
+            </div>
+        </aside>
+
+        <main>
+            <div class="topbar">
+                <div>
+                    <h1>AI Quality Inspection</h1>
+                    <p class="subtitle">Computer-vision assisted onion procurement assessment</p>
+                </div>
+                <div class="topbar-actions">
+                    <button id="startDemoInspectionBtn" class="btn" type="button" style="width:auto; min-width:210px; margin-top:0;">START NEW INSPECTION</button>
+                    <div id="inspectionStatus" class="status">● READY FOR INSPECTION</div>
+                </div>
+            </div>
+
+            <div class="workflow-rail" aria-label="Inspection workflow" aria-live="polite">
+                <div class="workflow-step active" data-workflow="IDLE">1. IDLE</div>
+                <div class="workflow-step" data-workflow="IMAGE READY">2. IMAGE READY</div>
+                <div class="workflow-step" data-workflow="ANALYZING">3. ANALYZING</div>
+                <div class="workflow-step" data-workflow="ANALYSIS COMPLETE">4. ANALYSIS COMPLETE</div>
+                <div class="workflow-step" data-workflow="CALIBRATION REQUIRED / CALIBRATED">5. CALIBRATION</div>
+                <div class="workflow-step" data-workflow="PENDING VERIFICATION">6. PENDING VERIFICATION</div>
+                <div class="workflow-step" data-workflow="VERIFIED">7. VERIFIED</div>
+                <div class="workflow-step" data-workflow="REPORT READY">8. REPORT READY</div>
+            </div>
+
+            <section class="panel" style="margin-bottom:24px;">
+                <h2>How ONI-SCAN Works</h2>
+                <div class="demo-flow" aria-label="ONI-SCAN inspection flow">
+                    <div class="demo-flow-step"><strong>IMAGE</strong><br>Upload sample</div>
+                    <div class="demo-flow-step"><strong>AI DETECTION</strong><br>Visible evidence</div>
+                    <div class="demo-flow-step"><strong>QUALITY OBSERVATION</strong><br>Class and confidence</div>
+                    <div class="demo-flow-step"><strong>SIZE MEASUREMENT</strong><br>Calibration when available</div>
+                    <div class="demo-flow-step"><strong>HUMAN VERIFICATION</strong><br>Inspector review</div>
+                    <div class="demo-flow-step"><strong>DIGITAL REPORT</strong><br>Stored result</div>
+                </div>
+            </section>
+
+            <section id="dashboardSection" class="cards">
+                <div class="card">
+                    <small>Total Inspections</small>
+                    <div class="number" id="inspections">0</div>
+                </div>
+                <div class="card">
+                    <small>Total Onions Inspected</small>
+                    <div class="number" id="onions">0</div>
+                </div>
+                <div class="card">
+                    <small>Average AI Confidence</small>
+                    <div class="number" id="confidence">—</div>
+                </div>
+                <div class="card">
+                    <small>Pending Verification</small>
+                    <div class="number" id="pendingVerification">0</div>
+                </div>
+            </section>
+
+            <section id="newInspectionSection" class="panel" style="margin-bottom:24px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:18px;">
+                    <h2 style="margin:0;">New Inspection</h2>
+                    <button id="newInspectionBtn" class="btn" type="button" style="width:auto; min-width:180px; margin-top:0;">NEW INSPECTION</button>
+                </div>
+                <div class="inspection-toolbar">
+                    <div class="field">
+                        <label for="sampleSizeSelect">Sample Size</label>
+                        <select id="sampleSizeSelect">
+                            <option value="25">25 onions</option>
+                            <option value="50" selected>50 onions</option>
+                            <option value="100">100 onions</option>
+                            <option value="custom">Custom</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label for="customSampleSize">Custom Sample Size</label>
+                        <input id="customSampleSize" type="number" min="1" max="500" value="50" />
+                    </div>
+                </div>
+                <div class="field">
+                    <label for="imageInput">Upload sample images</label>
+                    <input type="file" id="imageInput" accept="image/jpeg,image/png,image/webp,image/bmp" multiple />
+                    <small>Use multiple images to cover the 50-onion sample.</small>
+                </div>
+                <div class="inspection-toolbar" style="margin-top:14px; margin-bottom:0;">
+                    <div class="field">
+                        <label for="demoSampleSelect">SAMPLE IMAGE</label>
+                        <select id="demoSampleSelect">
+                            <option value="">Choose an existing test image</option>
+                        </select>
+                        <small>Uses a real image already included in the project.</small>
+                    </div>
+                    <div class="field" style="justify-content:flex-end;">
+                        <button id="loadDemoSampleBtn" class="btn" type="button" style="margin-top:0;">LOAD SAMPLE IMAGE</button>
+                    </div>
+                </div>
+                <div class="capability-state" style="margin-top:15px;">
+                    <strong>CALIBRATION</strong>
+                    <div class="inspection-toolbar" style="margin-top:12px;">
+                        <div class="field">
+                            <label for="referenceWidthMm">Reference object real width (mm)</label>
+                            <input id="referenceWidthMm" type="number" min="0.01" step="0.01" placeholder="Known physical width" />
+                        </div>
+                        <div class="field">
+                            <label for="referenceWidthPx">Reference object pixel width</label>
+                            <input id="referenceWidthPx" type="number" min="0.01" step="0.01" placeholder="Width measured in this image" />
+                        </div>
+                    </div>
+                    <small class="subtitle">Manual calibration: place a known-width reference object in the same image plane and enter its measured image width. Automatic reference-object detection is not installed.</small>
+                    <div id="calibrationWorkflowStatus" style="margin-top:10px; color:#ffcf8a;">Status: Not calibrated</div>
+                </div>
+                <div id="selectedImageSummary" class="notice" style="margin-top:15px; margin-bottom:0; background: rgba(255,255,255,.03); border-color: rgba(255,255,255,.08); color: #dfe8ff;">No images selected yet.</div>
+                <div id="inspectionSessionMeta" class="capability-state" style="margin-top:13px;">Inspection session ready. ID and timestamp will appear when analysis starts.</div>
+                <div class="workflow-state"><span>Workflow state</span><strong id="workflowStateLabel">IDLE</strong></div>
+            </section>
+
+            <section class="inspection">
+                <div class="panel">
+                    <h2>Sample Image</h2>
+                    <label class="dropzone">
+                        <input type="file" id="imageInputBackup" accept="image/jpeg,image/png,image/webp,image/bmp" multiple style="display:none;" />
+                        <div id="uploadContent">
+                            <div class="upload-icon">🧅</div>
+                            <strong>No sample uploaded</strong>
+                            <span class="subtitle">Upload an onion sample to begin inspection.</span>
+                        </div>
+                        <img id="preview" class="preview" alt="Onion sample" />
+                        <canvas id="detectionOverlay" class="detection-overlay" aria-label="AI detection overlay"></canvas>
+                        <div id="scanLine" class="scan-line"></div>
+                    </label>
+                    <button class="btn" id="scanButton" type="button">START AI INSPECTION</button>
+                    <div id="analysisStatus" class="analysis-status"></div>
+                    <div class="camera-panel">
+                        <strong>CAMERA</strong>
+                        <video id="cameraPreview" class="camera-preview" autoplay playsinline muted></video>
+                        <div id="cameraStatus" class="subtitle">Camera inactive. Back Camera is preferred on supported devices.</div>
+                        <div class="camera-actions">
+                            <button id="openCameraBtn" class="btn" type="button" style="margin-top:0;">OPEN CAMERA</button>
+                            <button id="switchCameraBtn" class="btn" type="button" style="margin-top:0;" disabled>SWITCH CAMERA</button>
+                            <button id="captureCameraBtn" class="btn" type="button" style="margin-top:0;" disabled>CAPTURE IMAGE</button>
+                            <button id="closeCameraBtn" class="btn" type="button" style="margin-top:0;" disabled>CLOSE CAMERA</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <h2>Inspection Results</h2>
+                    <div class="results">
+                        <div class="result">
+                            <div class="label"><span class="dot blue"></span> Detected Onions</div>
+                            <strong id="detectedOnionsResult">—</strong>
+                        </div>
+                        <div class="result">
+                            <div class="label"><span class="dot green"></span> Acceptable</div>
+                            <strong id="acceptableResult">—</strong>
+                        </div>
+                        <div class="result">
+                            <div class="label"><span class="dot yellow"></span> Damaged</div>
+                            <strong id="damagedResult">—</strong>
+                        </div>
+                        <div class="result">
+                            <div class="label"><span class="dot red"></span> Visible Rot</div>
+                            <strong id="rotResult">—</strong>
+                        </div>
+                        <div class="result">
+                            <div class="label"><span class="dot purple"></span> Sprouted</div>
+                            <strong id="sproutedResult">—</strong>
+                        </div>
+                    </div>
+                    <div class="capability-state" style="margin-top:13px;">
+                        <strong>Available classification: bad-onion</strong>
+                        <span id="badOnionResult" style="display:block; margin-top:6px; color:#dfe8ff;">No analysis yet</span>
+                    </div>
+                    <div class="capability-state" style="margin-top:13px;">
+                        <strong id="gradingResult">Grading: Pending verified procurement standard</strong>
+                    </div>
+                    <div class="grade-card" aria-live="polite">
+                        <div id="finalGradeLetter" class="grade-letter">—</div>
+                        <div><strong>FINAL QUALITY GRADE</strong><br><span id="finalGradeRange">Pending human verification</span><br><small>UI mapping: A = Range-I, B = Range-II, C = Range-III</small></div>
+                    </div>
+                    <div class="notice" style="background: rgba(70, 220, 140, .08); border-color: rgba(70, 220, 140, .2); color: #b9f7d2;">
+                        AI-assisted observation of visible onion characteristics.<br>
+                        Final procurement classification requires human verification against the applicable standard.<br>
+                        RGB image analysis identifies visible characteristics. Internal defects that are not externally visible cannot be reliably determined from a standard RGB image alone.
+                    </div>
+                </div>
+            </section>
+
+            <section class="panel" style="margin-top:24px;">
+                <h2>ADDITIONAL AI OBSERVATION</h2>
+                <div class="capability-state">
+                    <strong>Model: Teachable Machine</strong>
+                    <span id="teachableStatus" style="display:block; margin-top:6px;">Additional AI observation unavailable</span>
+                    <span id="teachablePrediction" style="display:block; margin-top:6px; color:#dfe8ff;">Prediction: Not available</span>
+                    <span id="teachableConfidence" style="display:block; margin-top:4px; color:#dfe8ff;">Confidence: Not available</span>
+                </div>
+                <small class="subtitle">Supplementary observation only. It cannot override YOLO evidence, human verification, or the official grading engine.</small>
+            </section>
+
+            <section class="panel" style="margin-top:24px;">
+                <h2>AI DETECTION EVIDENCE</h2>
+                <div class="evidence-grid">
+                    <div class="evidence-box">
+                        <h3>ORIGINAL IMAGE</h3>
+                        <img id="originalEvidenceImage" class="evidence-image" alt="Original uploaded onion sample" />
+                    </div>
+                    <div class="evidence-box">
+                        <h3>AI ANALYSIS</h3>
+                        <img id="annotatedEvidenceImage" class="evidence-image" alt="YOLO annotated onion sample" />
+                    </div>
+                </div>
+                <div class="detection-legend" aria-label="AI detection legend">
+                    <span class="legend-item"><span class="dot green"></span>Acceptable</span>
+                    <span class="legend-item"><span class="dot yellow"></span>Damaged</span>
+                    <span class="legend-item"><span class="dot red"></span>Visible Rot</span>
+                    <span class="legend-item"><span class="dot purple"></span>Sprouted</span>
+                </div>
+                <div id="evidenceStatus" class="capability-state" aria-live="polite">Upload an image to view AI detection evidence.</div>
+            </section>
+
+            <section class="panel" style="margin-top:24px;">
+                <h2>50-Onion Sample Progress</h2>
+                <div id="sampleProgressSummary" style="font-size: 14px; color: #dfe8ff; margin-bottom: 8px;">0 / 50 onions detected</div>
+                <div class="progress-track"><div id="coverageProgress" class="progress-fill"></div></div>
+                <div id="coverageText" style="margin-top: 8px; color: #8f96ad;">0% coverage</div>
+            </section>
+
+            <section class="panel" style="margin-top:24px;">
+                <h2>Individual Onion Records</h2>
+                <div id="individualDetectionStatus" class="capability-state">Individual onion detection model not yet available.</div>
+                <div id="onionRecords" class="onion-records">
+                    <div class="report-preview-empty" style="min-height:90px;">No individual onion records available.</div>
+                </div>
+            </section>
+
+            <section class="panel" style="margin-top:24px;">
+                <h2>AI Detection Details</h2>
+                <div id="detectionRecords" class="onion-records">
+                    <div class="report-preview-empty" style="min-height:90px;">No AI detections available yet.</div>
+                </div>
+            </section>
+
+            <section class="panel" style="margin-top:24px;">
+                <h2>Size Measurement</h2>
+                <div id="sizeCalibrationStatus" class="capability-state">No calibration available. Add a reference measurement to calculate physical size.</div>
+                <div id="sizeMeasurements" class="onion-records">
+                    <div class="report-preview-empty" style="min-height:90px;">No measured onions yet.</div>
+                </div>
+                <div class="notice">Size measurement is an AI-assisted estimate based on image calibration. Final procurement classification requires verification against the applicable standard.</div>
+            </section>
+
+            <section class="panel" style="margin-top:24px;">
+                <h2>Inspection Summary</h2>
+                <div class="analytics-grid">
+                    <div class="mini-stat"><small>Sample Size</small><strong id="summarySampleSize">50 onions</strong></div>
+                    <div class="mini-stat"><small>Images Uploaded</small><strong id="summaryImagesUploaded">0</strong></div>
+                    <div class="mini-stat"><small>AI Detected</small><strong id="summaryDetected">0</strong></div>
+                    <div class="mini-stat"><small>Coverage</small><strong id="summaryCoverage">0%</strong></div>
+                    <div class="mini-stat"><small>Bad Onion</small><strong id="summaryBadOnion">0</strong></div>
+                    <div class="mini-stat"><small>Bad Onion Percentage</small><strong id="summaryBadPercentage">0%</strong></div>
+                    <div class="mini-stat"><small>Average Confidence</small><strong id="summaryConfidence">0%</strong></div>
+                    <div class="mini-stat"><small>AI Status</small><strong id="summaryAiStatus">Ready</strong></div>
+                    <div class="mini-stat"><small>AI Model</small><strong id="summaryModel">YOLO</strong></div>
+                    <div class="mini-stat"><small>Human Verification</small><strong id="summaryVerification">Pending</strong></div>
+                </div>
+                <div class="notice" style="margin-top:16px; background: rgba(255,255,255,.03); border-color: rgba(255,255,255,.08); color: #dfe8ff;">
+                    Multi-image counts represent detected instances. Duplicate onions across overlapping images may require human verification.
+                </div>
+            </section>
+
+            <section class="panel" style="margin-top:24px;">
+                <h2>Observation Layer</h2>
+                <div class="analytics-grid">
+                    <div class="mini-stat"><small>Damaged</small><strong id="observationDamaged">Not assessed by current model</strong></div>
+                    <div class="mini-stat"><small>Visible Rot</small><strong id="observationRot">Not assessed by current model</strong></div>
+                    <div class="mini-stat"><small>Sprouted</small><strong id="observationSprouted">Not assessed by current model</strong></div>
+                    <div class="mini-stat"><small>Estimated Size</small><strong id="observationSize">Not assessed by current model</strong></div>
+                </div>
+                <div class="capability-state">Calibration status: <strong id="observationCalibration">Not available</strong></div>
+            </section>
+
+            <section class="panel" style="margin-top:24px;">
+                <h2>Human Verification</h2>
+                <div class="analytics-grid">
+                    <div class="mini-stat"><small>AI Assessment</small><strong id="humanAiAssessment">Pending analysis</strong></div>
+                    <div class="mini-stat"><small>Verification Status</small><strong id="humanVerificationStatus">Pending</strong></div>
+                    <div class="mini-stat"><small>Final Grade</small><strong id="humanFinalGrade">Pending</strong></div>
+                    <div class="mini-stat"><small>Reviewer Confirmation</small><strong id="humanReviewerConfirmation">Required</strong></div>
+                </div>
+                <div class="review-flow" aria-label="Review sequence">
+                    <div class="review-flow-step"><strong>AI DETECTION</strong><br><small>Evidence only</small></div>
+                    <div class="review-flow-step"><strong>HUMAN REVIEW</strong><br><small>Inspector confirms</small></div>
+                    <div class="review-flow-step"><strong>FINAL DECISION</strong><br><small>Verified grading</small></div>
+                </div>
+                <div class="capability-state" style="margin-top:16px;">
+                    <strong>AI Assessment → Human Verification → Final Procurement Grade</strong>
+                    <div class="inspection-toolbar" style="margin-top:12px;">
+                        <div class="field"><label for="verifiedCutPct">Verified cut (% by count)</label><input id="verifiedCutPct" type="number" min="0" step="0.01" placeholder="Inspector value" /></div>
+                        <div class="field"><label for="verifiedDoubleSplitPct">Verified double split (% by count)</label><input id="verifiedDoubleSplitPct" type="number" min="0" step="0.01" placeholder="Inspector value" /></div>
+                        <div class="field"><label for="verifiedSproutedPct">Verified sprouted (% by count)</label><input id="verifiedSproutedPct" type="number" min="0" step="0.01" placeholder="Inspector value" /></div>
+                        <div class="field"><label for="verifiedRootingPct">Verified rooting (% by count)</label><input id="verifiedRootingPct" type="number" min="0" step="0.01" placeholder="Inspector value" /></div>
+                        <div class="field"><label for="verifiedSizeMm">Verified maximum diameter (mm)</label><input id="verifiedSizeMm" type="number" min="0" step="0.01" placeholder="Inspector value" /></div>
+                        <div class="field"><label for="verifiedRange">Verified e-NAM range</label><select id="verifiedRange"><option value="">Select after assayer review</option><option value="Range-I">Range-I</option><option value="Range-II">Range-II</option><option value="Range-III">Range-III</option></select></div>
+                    </div>
+                    <small class="subtitle">Enter only values verified by the inspector. AI detections remain traceable and are not converted automatically into official defect categories.</small>
+                </div>
+                <div id="gradingOutcome" class="notice" style="margin-top:16px;">No verification completed. Review AI observations before finalizing.</div>
+                <div class="notice" style="margin-top:16px;">Measurements are AI-assisted estimates based on image calibration. Final procurement classification requires verification against the applicable standard.</div>
+                <div style="margin-top: 16px; display:flex; justify-content:flex-start; gap:12px; flex-wrap:wrap;">
+                    <button id="verifyInspectionBtn" class="btn" type="button" style="width:auto; min-width:220px; margin-top:0;">VERIFY OBSERVATIONS & GRADE</button>
+                    <button id="finalizeInspectionBtn" class="btn" type="button" style="width:auto; min-width:220px; margin-top:0;">FINALIZE INSPECTION</button>
+                </div>
+                <div id="finalizationStatus" class="analysis-status" aria-live="polite"></div>
+            </section>
+
+            <section class="panel" style="margin-top:24px;">
+                <h2>Annotated Sample Images</h2>
+                <div id="resultGallery" class="gallery-grid">
+                    <div class="report-preview-empty" style="min-height:110px;">No annotated images yet.</div>
+                </div>
+            </section>
+
+            <section id="historySection" class="secondary-grid" style="margin-top:24px; display:grid; grid-template-columns: 1.2fr 1fr; gap:20px;">
+                <div class="panel">
+                    <h2>Inspection History</h2>
+                    <div id="historyList" class="history-list"></div>
+                </div>
+
+                <div class="panel">
+                    <h2>Analytics</h2>
+                    <div class="analytics-grid">
+                        <div class="mini-stat"><small>Total inspections</small><strong id="analyticsTotal">0</strong></div>
+                        <div class="mini-stat"><small>Total onions inspected</small><strong id="analyticsDetections">0</strong></div>
+                        <div class="mini-stat"><small>Average confidence</small><strong id="analyticsConfidence">No confidence data available</strong></div>
+                        <div class="mini-stat"><small>Pending verification</small><strong id="analyticsPending">0</strong></div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="analyticsSection" class="secondary-grid" style="margin-top:24px; display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
+                <div class="panel">
+                    <h2>AI Observation Distribution</h2>
+                    <div id="observationDistribution" class="analytics-bars"><div class="analytics-empty">No inspection data available yet.</div></div>
+                </div>
+                <div class="panel">
+                    <h2>Verified Grading Distribution</h2>
+                    <div id="gradingDistribution" class="analytics-bars"><div class="analytics-empty">No grading results available yet.</div></div>
+                </div>
+            </section>
+
+            <section class="secondary-grid" style="margin-top:24px; display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
+                <div class="panel">
+                    <h2>Inspection Trend</h2>
+                    <div id="inspectionTrend" class="trend-list"><div class="analytics-empty">Not enough inspection data to show a trend.</div></div>
+                </div>
+                <div class="panel">
+                    <h2>Recent Inspections</h2>
+                    <div id="recentInspections" class="history-list"><div class="analytics-empty">No inspection data available yet.</div></div>
+                </div>
+            </section>
+
+            <section id="reportSection" class="panel" style="margin-top:24px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:18px;">
+                    <h2 style="margin:0;">Inspection Report</h2>
+                    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                        <button id="openReportBtn" class="btn" type="button" style="width:auto; min-width:150px; margin-top:0;" disabled>VIEW REPORT</button>
+                        <button id="downloadReportBtn" class="btn" type="button" style="width:auto; min-width:220px; margin-top:0;" disabled>DOWNLOAD QUALITY REPORT</button>
+                    </div>
+                </div>
+                <div id="reportPreview" class="report-preview-empty">No inspection report available yet.</div>
+            </section>
+
+            <section id="settingsSection" class="panel" style="margin-top:24px;">
+                <h2>Settings</h2>
+                <div class="settings-list">
+                    <div class="setting-row"><span>Model</span><strong>YOLO</strong></div>
+                    <div class="setting-row"><span>Current model</span><strong>bad-onion detector</strong></div>
+                    <div class="setting-row"><span>API</span><strong id="apiStatus">Checking...</strong></div>
+                    <div class="setting-row"><span>Inspection mode</span><strong>AI-assisted</strong></div>
+                    <div class="setting-row"><span>Grading rules</span><strong>Configurable</strong></div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <div id="reportModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>ONI-SCAN Inspection Report</h3>
+                <button id="closeReportBtn" class="close-btn" type="button">✕</button>
+            </div>
+            <div id="reportContent"></div>
+            <div class="modal-actions">
+                <button id="downloadModalReportBtn" class="btn small-btn" type="button">DOWNLOAD QUALITY REPORT</button>
+                <button id="printReportBtn" class="btn small-btn" type="button">PRINT REPORT</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8/dist/teachablemachine-image.min.js"></script>
+    <script>
+        const STORAGE_KEY = 'oni_scan_history_v1';
+        const TEACHABLE_MACHINE_MODEL_URL = 'https://teachablemachine.withgoogle.com/models/ccjAXmfJp/';
+        const state = {
+            currentFile: null,
+            currentResult: null,
+            history: loadHistory(),
+            inspection: {
+                id: createInspectionId(),
+                backendInspectionId: null,
+                sampleSize: 50,
+                images: [],
+                imageResults: [],
+                timestamp: null,
+                uploadedFilename: '',
+                detectedOnionCount: 0,
+                badOnionCount: 0,
+                averageConfidence: null,
+                aiStatus: 'Ready',
+                observations: createObservationLayer(),
+                gradingResult: gradeInspection({}),
+                humanVerifiedObservations: {},
+                verificationStatus: 'Pending',
+                workflowState: 'IDLE',
+                finalized: false,
+                errors: [],
+                teachableObservation: null
+            }
+        };
+
+        const imageInput = document.getElementById('imageInput');
+        const imageInputBackup = document.getElementById('imageInputBackup');
+        const preview = document.getElementById('preview');
+        const originalEvidenceImage = document.getElementById('originalEvidenceImage');
+        const annotatedEvidenceImage = document.getElementById('annotatedEvidenceImage');
+        const evidenceStatus = document.getElementById('evidenceStatus');
+        const detectionOverlay = document.getElementById('detectionOverlay');
+        const uploadContent = document.getElementById('uploadContent');
+        const scanButton = document.getElementById('scanButton');
+        const scanLine = document.getElementById('scanLine');
+        const cameraPreview = document.getElementById('cameraPreview');
+        const cameraStatus = document.getElementById('cameraStatus');
+        const openCameraBtn = document.getElementById('openCameraBtn');
+        const switchCameraBtn = document.getElementById('switchCameraBtn');
+        const captureCameraBtn = document.getElementById('captureCameraBtn');
+        const closeCameraBtn = document.getElementById('closeCameraBtn');
+        const analysisStatus = document.getElementById('analysisStatus');
+        const inspectionStatus = document.getElementById('inspectionStatus');
+        const inspectionSessionMeta = document.getElementById('inspectionSessionMeta');
+        const reportPreview = document.getElementById('reportPreview');
+        const reportModal = document.getElementById('reportModal');
+        const reportContent = document.getElementById('reportContent');
+        const sampleSizeSelect = document.getElementById('sampleSizeSelect');
+        const customSampleSize = document.getElementById('customSampleSize');
+        const demoSampleSelect = document.getElementById('demoSampleSelect');
+        const loadDemoSampleBtn = document.getElementById('loadDemoSampleBtn');
+        const startDemoInspectionBtn = document.getElementById('startDemoInspectionBtn');
+        const selectedImageSummary = document.getElementById('selectedImageSummary');
+        const resultGallery = document.getElementById('resultGallery');
+        const onionRecords = document.getElementById('onionRecords');
+        const individualDetectionStatus = document.getElementById('individualDetectionStatus');
+        const coverageProgress = document.getElementById('coverageProgress');
+        const sampleProgressSummary = document.getElementById('sampleProgressSummary');
+        const coverageText = document.getElementById('coverageText');
+        const referenceWidthMm = document.getElementById('referenceWidthMm');
+        const referenceWidthPx = document.getElementById('referenceWidthPx');
+        const sizeCalibrationStatus = document.getElementById('sizeCalibrationStatus');
+        const sizeMeasurements = document.getElementById('sizeMeasurements');
+        const calibrationWorkflowStatus = document.getElementById('calibrationWorkflowStatus');
+        const gradingOutcome = document.getElementById('gradingOutcome');
+        const detectionRecords = document.getElementById('detectionRecords');
+        const workflowStateLabel = document.getElementById('workflowStateLabel');
+        const finalizationStatus = document.getElementById('finalizationStatus');
+        const workflowSteps = Array.from(document.querySelectorAll('[data-workflow]'));
+        const openReportButton = document.getElementById('openReportBtn');
+        const downloadReportButton = document.getElementById('downloadReportBtn');
+        const finalGradeLetter = document.getElementById('finalGradeLetter');
+        const finalGradeRange = document.getElementById('finalGradeRange');
+        const teachableStatus = document.getElementById('teachableStatus');
+        const teachablePrediction = document.getElementById('teachablePrediction');
+        const teachableConfidence = document.getElementById('teachableConfidence');
+        let currentReportId = null;
+        let cameraStream = null;
+        let cameraFacingMode = 'environment';
+        let teachableModel = null;
+
+        function createInspectionId() {
+            const year = new Date().getFullYear();
+            const count = (JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]').length || 0) + 1;
+            return `ONI-${year}-${String(count).padStart(4, '0')}`;
+        }
+
+        function loadHistory() {
+            try {
+                const raw = localStorage.getItem(STORAGE_KEY);
+                return raw ? JSON.parse(raw) : [];
+            } catch (error) {
+                console.warn('Unable to read inspection history.', error);
+                return [];
+            }
+        }
+
+        function normalizeStoredInspection(record) {
+            const observations = record.ai_observations || {};
+            const counts = observations.class_counts || {};
+            const rawCounts = observations.raw_class_counts || {};
+            const confidence = Number(observations.average_confidence);
+            const gradingResult = record.grading_result || { status: 'pending_verification', range: null };
+            return {
+                ...record,
+                id: record.inspection_id || record.id,
+                timestamp: record.timestamp,
+                sampleSize: record.sample_size || Number(observations.total_detected) || 0,
+                imagesUploaded: record.uploaded_filename ? 1 : 0,
+                detections: Number(observations.total_detected) || 0,
+                individualOnions: 0,
+                badOnions: Number(rawCounts['bad-onion']) || Number(counts.damaged) || 0,
+                confidence: Number.isFinite(confidence) ? confidence * 100 : 0,
+                verificationStatus: record.human_verification?.status === 'verified' ? 'Verified' : 'Pending',
+                gradingStatus: gradingResult.status || 'pending_verification',
+                gradingResult,
+                uiGrade: formatGradeMapping(gradingResult),
+                sampleImageFilename: record.uploaded_filename,
+                resultImages: record.result_image ? [{ filename: record.uploaded_filename, result_image: record.result_image }] : []
+            };
+        }
+
+        async function loadBackendHistory() {
+            try {
+                const response = await fetch('/inspections');
+                const payload = await response.json();
+                if (!response.ok || payload.success !== true) throw new Error(payload.error || 'Inspection history unavailable.');
+                if (Array.isArray(payload.inspections) && payload.inspections.length) {
+                    state.history = payload.inspections.map(normalizeStoredInspection);
+                    renderHistory();
+                    renderAnalytics();
+                    updateDashboardCards();
+                }
+            } catch (error) {
+                setStatus('Inspection history unavailable. Continue with the current inspection or try again.', true);
+            }
+        }
+
+        async function loadDemoSamples() {
+            try {
+                const response = await fetch('/demo-samples');
+                const payload = await response.json();
+                if (!response.ok || payload.success !== true) throw new Error('Sample images unavailable.');
+                const samples = Array.isArray(payload.samples) ? payload.samples : [];
+                demoSampleSelect.innerHTML = '<option value="">Choose an existing test image</option>';
+                samples.forEach((sample) => {
+                    const option = document.createElement('option');
+                    option.value = sample.url;
+                    option.textContent = sample.name;
+                    option.dataset.filename = sample.name;
+                    demoSampleSelect.appendChild(option);
+                });
+                if (!samples.length) {
+                    demoSampleSelect.innerHTML = '<option value="">No sample images available</option>';
+                }
+            } catch (error) {
+                demoSampleSelect.innerHTML = '<option value="">Sample picker unavailable</option>';
+                setStatus('Sample picker unavailable. Upload an image manually.', true);
+            }
+        }
+
+        async function loadDemoSample() {
+            const option = demoSampleSelect.selectedOptions[0];
+            if (!option?.value) {
+                setStatus('Choose a SAMPLE IMAGE or upload one manually.', true);
+                return;
+            }
+            try {
+                loadDemoSampleBtn.disabled = true;
+                setStatus('Loading real sample image...');
+                const response = await fetch(option.value);
+                if (!response.ok) throw new Error('The selected sample image is unavailable.');
+                const blob = await response.blob();
+                const file = new File([blob], option.dataset.filename || 'onion-sample.jpg', { type: blob.type || 'image/jpeg' });
+                const transfer = new DataTransfer();
+                transfer.items.add(file);
+                imageInput.files = transfer.files;
+                imageInput.dispatchEvent(new Event('change', { bubbles: true }));
+                setStatus('Real sample image loaded. Ready for AI inspection.');
+            } catch (error) {
+                setStatus(error.message || 'The selected sample image is unavailable.', true);
+            } finally {
+                loadDemoSampleBtn.disabled = false;
+            }
+        }
+
+        function mapOfficialRangeToGrade(range) {
+            return { 'Range-I': 'A', 'Range-II': 'B', 'Range-III': 'C' }[range] || null;
+        }
+
+        function formatGradeMapping(grading = {}) {
+            const grade = grading.status === 'graded' ? mapOfficialRangeToGrade(grading.range) : null;
+            return grade ? `Grade ${grade} · ${grading.range}` : 'Pending human verification';
+        }
+
+        function updateFinalGradeDisplay(grading = state.inspection.gradingResult) {
+            const range = grading && grading.status === 'graded' ? grading.range : null;
+            const grade = mapOfficialRangeToGrade(range);
+            finalGradeLetter.textContent = grade || '—';
+            finalGradeRange.textContent = range || 'Pending human verification';
+            finalGradeLetter.style.background = grade ? 'rgba(103,232,163,.16)' : 'rgba(255,255,255,.06)';
+            finalGradeLetter.style.color = grade ? '#b9f7d2' : '#9da4bd';
+        }
+
+        function setCameraButtons(active) {
+            openCameraBtn.disabled = active;
+            switchCameraBtn.disabled = !active;
+            captureCameraBtn.disabled = !active;
+            closeCameraBtn.disabled = !active;
+        }
+
+        function stopCamera() {
+            if (cameraStream) {
+                cameraStream.getTracks().forEach((track) => track.stop());
+                cameraStream = null;
+            }
+            cameraPreview.srcObject = null;
+            cameraPreview.style.display = 'none';
+            setCameraButtons(false);
+        }
+
+        async function startCamera(facingMode = cameraFacingMode) {
+            if (!navigator.mediaDevices?.getUserMedia) {
+                cameraStatus.textContent = 'Camera unavailable in this browser. Upload an image instead.';
+                setStatus('Camera unavailable. Upload an image instead.', true);
+                return;
+            }
+            stopCamera();
+            try {
+                cameraFacingMode = facingMode;
+                cameraStream = await navigator.mediaDevices.getUserMedia({
+                    audio: false,
+                    video: { facingMode: { ideal: facingMode }, width: { ideal: 1280 }, height: { ideal: 720 } }
+                });
+                cameraPreview.srcObject = cameraStream;
+                cameraPreview.style.display = 'block';
+                cameraStatus.textContent = `Camera: ${cameraFacingMode === 'environment' ? 'Back Camera' : 'Front Camera'}`;
+                setCameraButtons(true);
+                setStatus('Camera ready. Capture an image or continue with upload.');
+            } catch (error) {
+                if (facingMode === 'environment') {
+                    try {
+                        return await startCamera('user');
+                    } catch (fallbackError) {
+                        setStatus('Camera unavailable or permission was denied. Upload an image instead.', true);
+                    }
+                } else {
+                    setStatus('Camera unavailable or permission was denied. Upload an image instead.', true);
+                }
+                cameraStatus.textContent = 'Camera unavailable. Upload an image instead.';
+                stopCamera();
+            }
+        }
+
+        async function captureCameraImage() {
+            if (!cameraStream || !cameraPreview.videoWidth || !cameraPreview.videoHeight) {
+                setStatus('Camera is not ready. Open the camera before capturing.', true);
+                return;
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = cameraPreview.videoWidth;
+            canvas.height = cameraPreview.videoHeight;
+            canvas.getContext('2d').drawImage(cameraPreview, 0, 0, canvas.width, canvas.height);
+            canvas.toBlob((blob) => {
+                if (!blob) {
+                    setStatus('Camera capture failed. Try again or upload an image.', true);
+                    return;
+                }
+                const file = new File([blob], `camera-${Date.now()}.jpg`, { type: 'image/jpeg' });
+                const transfer = new DataTransfer();
+                transfer.items.add(file);
+                imageInput.files = transfer.files;
+                imageInput.dispatchEvent(new Event('change', { bubbles: true }));
+                stopCamera();
+                setStatus('Camera image captured. Preview ready for AI inspection.');
+            }, 'image/jpeg', 0.92);
+        }
+
+        async function loadTeachableModel() {
+            if (teachableModel) return teachableModel;
+            if (!window.tmImage) throw new Error('Teachable Machine library unavailable.');
+            teachableStatus.textContent = 'Loading supplementary model...';
+            teachableModel = await window.tmImage.load(
+                `${TEACHABLE_MACHINE_MODEL_URL}model.json`,
+                `${TEACHABLE_MACHINE_MODEL_URL}metadata.json`
+            );
+            return teachableModel;
+        }
+
+        async function updateTeachableObservation(imageElement) {
+            try {
+                const model = await loadTeachableModel();
+                const predictions = await model.predict(imageElement);
+                const prediction = predictions.reduce((best, item) => item.probability > best.probability ? item : best, predictions[0]);
+                if (!prediction) throw new Error('No supplementary prediction returned.');
+                state.inspection.teachableObservation = { class: prediction.className, confidence: prediction.probability };
+                teachableStatus.textContent = 'Supplementary observation available';
+                teachablePrediction.textContent = `Prediction: ${prediction.className}`;
+                teachableConfidence.textContent = `Confidence: ${Math.round(prediction.probability * 100)}%`;
+            } catch (error) {
+                state.inspection.teachableObservation = null;
+                teachableStatus.textContent = 'Additional AI observation unavailable';
+                teachablePrediction.textContent = 'Prediction: Not available';
+                teachableConfidence.textContent = 'Confidence: Not available';
+            }
+        }
+
+        function renderAnalyticsBars(containerId, values, colorsByName, emptyMessage) {
+            const container = document.getElementById(containerId);
+            const entries = Object.entries(values || {});
+            const total = entries.reduce((sum, [, value]) => sum + (Number(value) || 0), 0);
+            if (!entries.length || total === 0) {
+                container.innerHTML = `<div class="analytics-empty">${emptyMessage}</div>`;
+                return;
+            }
+            container.innerHTML = entries.map(([name, value]) => {
+                const numericValue = Number(value) || 0;
+                const width = total > 0 ? (numericValue / total) * 100 : 0;
+                return `<div class="analytics-bar-row"><span>${name}</span><div class="analytics-bar-track"><div class="analytics-bar-fill" style="width:${width}%; background:${colorsByName[name] || '#72b7ff'};"></div></div><strong>${numericValue}</strong></div>`;
+            }).join('');
+        }
+
+        function renderRecentInspections(records) {
+            const container = document.getElementById('recentInspections');
+            if (!Array.isArray(records) || !records.length) {
+                container.innerHTML = '<div class="analytics-empty">No inspection data available yet.</div>';
+                return;
+            }
+            container.innerHTML = records.map((record) => {
+                const normalized = normalizeStoredInspection(record);
+                return `<div class="history-item" data-report-id="${normalized.id}"><div class="history-meta"><strong>${normalized.id}</strong><span class="subtitle">${new Date(normalized.timestamp).toLocaleString()}</span><span class="subtitle">${normalized.detections} onions · ${normalized.verificationStatus} · ${normalized.uiGrade}</span></div></div>`;
+            }).join('');
+            container.querySelectorAll('[data-report-id]').forEach((item) => {
+                item.addEventListener('click', () => {
+                    const entry = state.history.find((record) => record.id === item.dataset.reportId);
+                    if (entry) openReportModal(entry);
+                });
+            });
+        }
+
+        function renderAnalyticsData(data) {
+            const average = data.average_ai_confidence;
+            document.getElementById('inspections').textContent = String(data.total_inspections || 0);
+            document.getElementById('onions').textContent = String(data.total_onions || 0);
+            document.getElementById('confidence').textContent = average === null || average === undefined
+                ? 'No confidence data available'
+                : `${Math.round(Number(average) * 100)}%`;
+            document.getElementById('pendingVerification').textContent = String(data.pending_verification || 0);
+            document.getElementById('analyticsTotal').textContent = String(data.total_inspections || 0);
+            document.getElementById('analyticsDetections').textContent = String(data.total_onions || 0);
+            document.getElementById('analyticsConfidence').textContent = average === null || average === undefined
+                ? 'No confidence data available'
+                : `${Math.round(Number(average) * 100)}%`;
+            document.getElementById('analyticsPending').textContent = String(data.pending_verification || 0);
+
+            renderAnalyticsBars('observationDistribution', data.observation_distribution, {
+                acceptable: '#45df91', damaged: '#f5c84b', visible_rot: '#ff5b67', sprouted: '#a879ff'
+            }, 'No observation data available yet.');
+            renderAnalyticsBars('gradingDistribution', data.grading_distribution, {
+                'Range-I': '#45df91', 'Range-II': '#f5c84b', 'Range-III': '#ff9d5c', 'Pending Verification': '#8f96ad'
+            }, 'No grading results available yet.');
+
+            const trend = Array.isArray(data.inspection_trend) ? data.inspection_trend : [];
+            document.getElementById('inspectionTrend').innerHTML = trend.length < 2
+                ? '<div class="analytics-empty">Not enough inspection data to show a trend.</div>'
+                : trend.map((item) => `<div class="trend-row"><span>${item.date}</span><strong>${item.inspections} inspection${item.inspections === 1 ? '' : 's'}</strong></div>`).join('');
+            renderRecentInspections(data.recent_inspections);
+        }
+
+        async function loadAnalyticsDashboard() {
+            try {
+                const response = await fetch('/analytics');
+                const data = await response.json();
+                if (!response.ok || data.success !== true) throw new Error(data.error || 'Analytics unavailable.');
+                renderAnalyticsData(data);
+            } catch (error) {
+                setStatus('Analytics unavailable. Continue with the current inspection or try again.', true);
+            }
+        }
+
+        async function downloadInspectionReport(inspectionId) {
+            if (!inspectionId) {
+                setStatus('No inspection report available.', true);
+                return;
+            }
+            try {
+                const response = await fetch(`/inspections/${encodeURIComponent(inspectionId)}/report`);
+                if (!response.ok) {
+                    let message = 'The inspection report could not be generated.';
+                    try { message = (await response.json()).error || message; } catch (error) { }
+                    throw new Error(message);
+                }
+                const blob = await response.blob();
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `ONI-SCAN-${inspectionId}.pdf`;
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+                URL.revokeObjectURL(url);
+                setStatus(`Quality report downloaded for ${inspectionId}.`);
+            } catch (error) {
+                setStatus('Report unavailable. Try again or start a new inspection.', true);
+            }
+        }
+
+        function setStatus(message, isError = false) {
+            analysisStatus.textContent = message;
+            analysisStatus.style.color = isError ? '#ff8a8a' : '#8f96ad';
+        }
+
+        function setInspectionStatus(status) {
+            const displayStatus = status === 'Ready' ? 'Ready for Inspection' : status;
+            inspectionStatus.textContent = `● ${displayStatus.toUpperCase()}`;
+            inspectionStatus.className = `status${status === 'Analyzing' ? ' analyzing' : ''}${status === 'Analysis Failed' ? ' failed' : ''}`;
+        }
+
+        function setWorkflowState(stateName) {
+            state.inspection.workflowState = stateName;
+            workflowStateLabel.textContent = stateName;
+            const workflowKey = stateName === 'CALIBRATED' || stateName === 'CALIBRATION REQUIRED'
+                ? 'CALIBRATION REQUIRED / CALIBRATED'
+                : stateName;
+            const activeIndex = workflowSteps.findIndex((step) => step.dataset.workflow === workflowKey);
+            workflowSteps.forEach((step, index) => {
+                step.classList.toggle('active', index === activeIndex);
+                step.classList.toggle('complete', activeIndex > index);
+            });
+        }
+
+        function updateReportActions() {
+            const reportId = state.inspection.backendInspectionId || state.history[0]?.backendInspectionId || state.history[0]?.inspection_id;
+            const available = Boolean(reportId);
+            openReportButton.disabled = !available;
+            downloadReportButton.disabled = !available;
+        }
+
+        function detectionColor(className) {
+            const normalized = String(className || '').toLowerCase().replace('-', '_');
+            return {
+                acceptable: '#45df91',
+                damaged: '#f5c84b',
+                visible_rot: '#ff5b67',
+                sprouted: '#a879ff',
+                bad_onion: '#ff9d5c'
+            }[normalized] || '#72b7ff';
+        }
+
+        function drawDetectionOverlay() {
+            const context = detectionOverlay.getContext('2d');
+            if (!context) return;
+            const container = detectionOverlay.parentElement;
+            const detections = state.inspection.imageResults?.[0]?.detections || [];
+            const naturalWidth = preview.naturalWidth;
+            const naturalHeight = preview.naturalHeight;
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+            const ratio = window.devicePixelRatio || 1;
+            detectionOverlay.width = width * ratio;
+            detectionOverlay.height = height * ratio;
+            context.setTransform(ratio, 0, 0, ratio, 0, 0);
+            context.clearRect(0, 0, width, height);
+            if (!detections.length || !naturalWidth || !naturalHeight) return;
+
+            const scale = Math.min(width / naturalWidth, height / naturalHeight);
+            const offsetX = (width - naturalWidth * scale) / 2;
+            const offsetY = (height - naturalHeight * scale) / 2;
+            context.font = '12px Arial';
+            detections.forEach((detection) => {
+                const box = Array.isArray(detection.box) ? detection.box : [];
+                if (box.length !== 4) return;
+                const color = detectionColor(detection.class);
+                const x = offsetX + box[0] * scale;
+                const y = offsetY + box[1] * scale;
+                const boxWidth = (box[2] - box[0]) * scale;
+                const boxHeight = (box[3] - box[1]) * scale;
+                context.strokeStyle = color;
+                context.lineWidth = 2;
+                context.strokeRect(x, y, boxWidth, boxHeight);
+                const label = `${detection.class || 'unknown'} ${Math.round((Number(detection.confidence) || 0) * 100)}%`;
+                const labelWidth = context.measureText(label).width + 8;
+                context.fillStyle = color;
+                context.fillRect(x, Math.max(0, y - 17), labelWidth, 17);
+                context.fillStyle = '#070914';
+                context.fillText(label, x + 4, Math.max(12, y - 5));
+            });
+        }
+
+        function createObservationLayer() {
+            return {
+                visible_defects: {
+                    damaged: { value: null, status: 'Not assessed by current model' },
+                    visible_rot: { value: null, status: 'Not assessed by current model' },
+                    sprouted: { value: null, status: 'Not assessed by current model' }
+                },
+                size: {
+                    estimated_size: null,
+                    calibration_status: 'Calibration required'
+                }
+            };
+        }
+
+        function gradeInspection(observations) {
+            return {
+                grade: 'Pending',
+                range: null,
+                status: 'pending_verification',
+                reasons: [],
+                requires_human_verification: true,
+                inputs: observations
+            };
+        }
+
+        const gradingEngine = {
+            verifiedStandards: null,
+            assess(observations) {
+                return gradeInspection(observations);
+            }
+        };
+
+        function getNumberInput(id) {
+            const value = document.getElementById(id).value.trim();
+            const number = Number(value);
+            return value !== '' && Number.isFinite(number) && number >= 0 ? number : null;
+        }
+
+        function buildAiObservations() {
+            const classCounts = {};
+            state.inspection.imageResults.flatMap((item) => item.detections || []).forEach((detection) => {
+                const key = String(detection.class || 'unknown');
+                classCounts[key] = (classCounts[key] || 0) + 1;
+            });
+            return {
+                class_counts: classCounts,
+                measurements: state.inspection.imageResults.flatMap((item) => item.detections || []).map((detection) => detection.size || null)
+            };
+        }
+
+        async function submitVerifiedGrade() {
+            if (!state.inspection.imageResults.length) {
+                setStatus('Analyze an inspection before submitting verified observations.', true);
+                return;
+            }
+            const humanVerifiedObservations = {
+                cut_pct: getNumberInput('verifiedCutPct'),
+                double_split_pct: getNumberInput('verifiedDoubleSplitPct'),
+                sprouted_pct: getNumberInput('verifiedSproutedPct'),
+                rooting_pct: getNumberInput('verifiedRootingPct'),
+                size_mm: getNumberInput('verifiedSizeMm'),
+                selected_range: document.getElementById('verifiedRange').value || null
+            };
+            try {
+                const response = await fetch('/grade', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        inspection_id: state.inspection.backendInspectionId || state.inspection.id,
+                        ai_observations: buildAiObservations(),
+                        human_verified_observations: humanVerifiedObservations,
+                        human_verification: { status: 'verified' }
+                    })
+                });
+                const payload = await response.json();
+                if (!response.ok || !payload.grading) throw new Error(payload.error || 'Grading request failed.');
+                state.inspection.humanVerifiedObservations = humanVerifiedObservations;
+                state.inspection.gradingResult = payload.grading;
+                updateFinalGradeDisplay(payload.grading);
+                state.inspection.verificationStatus = payload.human_verification?.status === 'verified'
+                    ? 'Verified'
+                    : 'Pending Verification';
+                setWorkflowState(payload.grading.status === 'graded' ? 'VERIFIED' : 'PENDING VERIFICATION');
+                gradingOutcome.textContent = payload.grading.range
+                    ? `${payload.grading.range}: ${payload.grading.reasons.join(' ')}`
+                    : `${payload.grading.status.replace(/_/g, ' ')}: ${payload.grading.reasons.join(' ')}`;
+                const matched = state.history.find((item) => item.id === state.inspection.id);
+                if (matched) {
+                    matched.humanVerifiedObservations = humanVerifiedObservations;
+                    matched.gradingResult = payload.grading;
+                    matched.verificationStatus = state.inspection.verificationStatus;
+                    if (matched.reportData) matched.reportData.grading_result = payload.grading;
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(state.history));
+                }
+                updateInspectionSummary();
+                loadAnalyticsDashboard();
+                setStatus(payload.grading.range ? `Inspection graded ${payload.grading.range}.` : 'Verification saved; grading needs more information.');
+            } catch (error) {
+                setStatus(error.message || 'Grading request failed.', true);
+            }
+        }
+
+        async function finalizeInspection() {
+            const missing = [];
+            if (!state.inspection.imageResults.length) missing.push('AI analysis');
+            if (state.inspection.gradingResult?.status !== 'graded') missing.push('completed human verification and grading');
+            if (missing.length) {
+                finalizationStatus.textContent = `Cannot finalize. Missing: ${missing.join(', ')}.`;
+                setStatus(`Cannot finalize inspection. Missing: ${missing.join(', ')}.`, true);
+                return;
+            }
+            const inspectionId = state.inspection.backendInspectionId;
+            if (!inspectionId) {
+                finalizationStatus.textContent = 'Cannot finalize. The saved inspection ID is unavailable.';
+                setStatus('Cannot finalize. The saved inspection ID is unavailable.', true);
+                return;
+            }
+            try {
+                const response = await fetch(`/inspections/${encodeURIComponent(inspectionId)}/finalize`, { method: 'POST' });
+                const payload = await response.json();
+                if (!response.ok || payload.success !== true) throw new Error(payload.error || 'Inspection finalization failed.');
+                state.inspection.finalized = true;
+                state.inspection.workflowState = 'REPORT READY';
+                setInspectionStatus('Report Ready');
+                setWorkflowState('REPORT READY');
+                finalizationStatus.textContent = 'Inspection finalized. The quality report is ready.';
+                updateReportActions();
+                setStatus('Inspection finalized. Quality report ready.');
+                loadAnalyticsDashboard();
+            } catch (error) {
+                finalizationStatus.textContent = error.message || 'Inspection finalization failed.';
+                setStatus(error.message || 'Inspection finalization failed.', true);
+            }
+        }
+
+        function buildGradingInput(totals = getCurrentInspectionTotals()) {
+            return {
+                detected_count: totals.totalDetections,
+                bad_onion_count: totals.totalBadOnions,
+                visible_defects: state.inspection.observations.visible_defects,
+                size_measurements: state.inspection.observations.size
+            };
+        }
+
+        function updateSessionDisplay() {
+            const session = state.inspection;
+            if (!session.timestamp) {
+                inspectionSessionMeta.textContent = 'Inspection session ready. ID and timestamp will appear when analysis starts.';
+                return;
+            }
+            inspectionSessionMeta.innerHTML = `<strong>Inspection ID:</strong> ${session.id}<br><strong>Date/time:</strong> ${new Date(session.timestamp).toLocaleString()}<br><strong>Sample image:</strong> ${session.uploadedFilename || 'Not uploaded'}<br><strong>AI status:</strong> ${session.aiStatus}`;
+        }
+
+        function updateObservationLayer() {
+            const observations = state.inspection.observations || createObservationLayer();
+            document.getElementById('observationDamaged').textContent = observations.visible_defects.damaged.status;
+            document.getElementById('observationRot').textContent = observations.visible_defects.visible_rot.status;
+            document.getElementById('observationSprouted').textContent = observations.visible_defects.sprouted.status;
+            document.getElementById('observationSize').textContent = observations.size.estimated_size || 'Not assessed by current model';
+            document.getElementById('observationCalibration').textContent = observations.size.calibration_status;
+        }
+
+        function updateHumanVerification() {
+            const session = state.inspection;
+            const assessment = session.aiStatus === 'Analysis Complete'
+                ? `${session.detectedOnionCount} detected, ${session.badOnionCount} bad-onion, ${Math.round(session.averageConfidence || 0)}% confidence`
+                : session.aiStatus === 'Analysis Failed' ? 'Analysis failed; no final AI assessment' : 'Pending analysis';
+            document.getElementById('humanAiAssessment').textContent = assessment;
+            document.getElementById('humanVerificationStatus').textContent = session.verificationStatus || 'Pending';
+            document.getElementById('humanFinalGrade').textContent = (session.gradingResult || {}).range || (session.gradingResult || {}).status || 'Pending';
+            document.getElementById('humanReviewerConfirmation').textContent = session.verificationStatus === 'Verified' ? 'Confirmed' : 'Required';
+        }
+
+        function setScanState(scanning) {
+            scanButton.disabled = scanning;
+            scanButton.textContent = scanning ? 'ANALYZING SAMPLE...' : 'START AI INSPECTION';
+            scanLine.style.display = scanning ? 'block' : 'none';
+        }
+
+        function getSelectedSampleSize() {
+            const selected = sampleSizeSelect.value;
+            if (selected === 'custom') {
+                const val = Number(customSampleSize.value);
+                return Number.isFinite(val) && val > 0 ? val : 50;
+            }
+            const val = Number(selected);
+            return Number.isFinite(val) && val > 0 ? val : 50;
+        }
+
+        function updateSampleSize() {
+            const sampleSize = getSelectedSampleSize();
+            state.inspection.sampleSize = sampleSize;
+            customSampleSize.value = String(sampleSize);
+            updateInspectionSummary();
+        }
+
+        function normalizeImageUrl(url) {
+            if (!url) return '';
+            if (/^https?:\/\//i.test(url) || url.startsWith('data:') || url.startsWith('blob:')) {
+                return url;
+            }
+            return `${window.location.origin}${url.startsWith('/') ? url : '/' + url}`;
+        }
+
+        function renderEvidence(result = null) {
+            if (!result) {
+                originalEvidenceImage.removeAttribute('src');
+                annotatedEvidenceImage.removeAttribute('src');
+                evidenceStatus.textContent = 'Upload an image to view AI detection evidence.';
+                return;
+            }
+            if (preview.src) originalEvidenceImage.src = preview.src;
+            const annotatedImage = result.annotated_image || result.result_image;
+            if (annotatedImage) annotatedEvidenceImage.src = normalizeImageUrl(annotatedImage);
+            const detections = Array.isArray(result.detections) ? result.detections : [];
+            evidenceStatus.textContent = detections.length
+                ? `${detections.length} real YOLO detection${detections.length === 1 ? '' : 's'} shown in AI ANALYSIS.`
+                : 'No onions detected in this sample.';
+            evidenceStatus.style.color = detections.length ? '#b9f7d2' : '#ffcf8a';
+        }
+
+        function renderSelectedFilesSummary() {
+            const files = Array.from(imageInput.files || []);
+            if (!files.length) {
+                selectedImageSummary.textContent = 'No images selected yet.';
+                selectedImageSummary.style.color = '#dfe8ff';
+                return;
+            }
+            const previewNames = files.slice(0, 4).map((file) => file.name).join(', ');
+            const extra = files.length > 4 ? ` + ${files.length - 4} more` : '';
+            selectedImageSummary.textContent = `${files.length} image${files.length === 1 ? '' : 's'} selected for the ${state.inspection.sampleSize}-onion sample. ${previewNames}${extra}`;
+            selectedImageSummary.style.color = '#b9f7d2';
+        }
+
+        function getCurrentInspectionTotals() {
+            const results = state.inspection.imageResults || [];
+            let totalDetections = 0;
+            let totalBadOnions = 0;
+            let totalConfidence = 0;
+            let detectionCount = 0;
+            const individualOnions = results.flatMap((result) => result.individual_onions || []).length;
+
+            results.forEach((result) => {
+                const detections = Array.isArray(result.detections) ? result.detections : [];
+                totalDetections += detections.length;
+                detectionCount += detections.length;
+                totalBadOnions += detections.filter((item) => String(item.class).toLowerCase() === 'bad-onion').length;
+                detections.forEach((item) => {
+                    totalConfidence += Number(item.confidence) || 0;
+                });
+            });
+
+            const averageConfidence = totalDetections > 0 ? (totalConfidence / totalDetections) * 100 : 0;
+            const coveragePercent = state.inspection.sampleSize > 0 ? Math.min((individualOnions / state.inspection.sampleSize) * 100, 100) : 0;
+
+            return {
+                totalDetections,
+                totalBadOnions,
+                individualOnions,
+                averageConfidence,
+                coveragePercent,
+                detectionCount,
+                successCount: results.filter((res) => Array.isArray(res.detections)).length,
+                failureCount: state.inspection.errors.length
+            };
+        }
+
+        function updateInspectionSummary() {
+            const totals = getCurrentInspectionTotals();
+            const sampleSize = state.inspection.sampleSize || 50;
+            const coveragePercent = totals.coveragePercent;
+
+            state.inspection.detectedOnionCount = totals.totalDetections;
+            state.inspection.badOnionCount = totals.totalBadOnions;
+            state.inspection.averageConfidence = totals.totalDetections > 0 ? totals.averageConfidence : null;
+            state.inspection.gradingResult = state.inspection.gradingResult || gradingEngine.assess(buildGradingInput(totals));
+
+            document.getElementById('summarySampleSize').textContent = `${sampleSize} onions`;
+            document.getElementById('summaryImagesUploaded').textContent = String(state.inspection.images.length);
+            document.getElementById('summaryDetected').textContent = String(totals.totalDetections);
+            document.getElementById('summaryCoverage').textContent = `${Math.round(coveragePercent)}%`;
+            document.getElementById('summaryBadOnion').textContent = String(totals.totalBadOnions);
+            document.getElementById('summaryBadPercentage').textContent = totals.totalDetections > 0
+                ? `${Math.round((totals.totalBadOnions / totals.totalDetections) * 100)}%`
+                : 'N/A';
+            document.getElementById('summaryConfidence').textContent = `${Math.round(totals.averageConfidence)}%`;
+            document.getElementById('summaryAiStatus').textContent = state.inspection.aiStatus;
+            document.getElementById('summaryModel').textContent = 'YOLO';
+            document.getElementById('summaryVerification').textContent = state.inspection.verificationStatus || 'Pending';
+
+            sampleProgressSummary.textContent = totals.individualOnions > 0
+                ? `${totals.individualOnions} / ${sampleSize} individual onions detected`
+                : 'Individual onion coverage unavailable';
+            coverageText.textContent = totals.individualOnions > 0 ? `${Math.round(coveragePercent)}% coverage` : 'Coverage unavailable';
+            coverageProgress.style.width = `${Math.min(coveragePercent, 100)}%`;
+
+            if (coveragePercent >= 100) {
+                coverageText.textContent = 'Sample coverage complete';
+            }
+
+            if (state.inspection.images.length === 0) {
+                sampleProgressSummary.textContent = `0 / ${sampleSize} onions detected`;
+                coverageText.textContent = 'Coverage unavailable';
+                coverageProgress.style.width = '0%';
+            }
+            updateSessionDisplay();
+            updateObservationLayer();
+            updateHumanVerification();
+        }
+
+        function renderResultGallery() {
+            const galleries = state.inspection.imageResults || [];
+            if (!galleries.length) {
+                resultGallery.innerHTML = '<div class="report-preview-empty" style="min-height:110px;">No annotated images yet.</div>';
+                return;
+            }
+
+            resultGallery.innerHTML = galleries.map((item) => `
+                <div class="gallery-item">
+                    <img src="${normalizeImageUrl(item.result_image)}" alt="${item.filename}" />
+                    <strong>${item.filename}</strong>
+                </div>
+            `).join('');
+        }
+
+        function renderOnionRecords(records = []) {
+            if (!Array.isArray(records) || records.length === 0) {
+                onionRecords.innerHTML = '<div class="report-preview-empty" style="min-height:90px;">No individual onion records available.</div>';
+                return;
+            }
+
+            onionRecords.innerHTML = records.map((record, index) => {
+                const size = record.size || {};
+                const pixelSize = Number.isFinite(Number(size.width_px)) && Number.isFinite(Number(size.height_px))
+                    ? `${Number(size.width_px).toFixed(1)} × ${Number(size.height_px).toFixed(1)} px`
+                    : 'Pixel dimensions unavailable';
+                const physicalSize = size.calibrated === true && Number.isFinite(Number(size.diameter_mm))
+                    ? `${Number(size.diameter_mm).toFixed(2)} mm diameter`
+                    : 'Physical diameter unavailable';
+                return `
+                    <div class="onion-record">
+                        <strong>Onion ${index + 1}</strong>
+                        <small>AI confidence: ${Math.round((Number(record.detection_confidence) || 0) * 100)}%<br>Pixel dimensions: ${pixelSize}</small>
+                        <small>${physicalSize}<br>Verification: ${record.verification_status || 'pending'}</small>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderDetectionRecords(results = []) {
+            const detections = results.flatMap((item) => item.detections || []);
+            if (!detections.length) {
+                detectionRecords.innerHTML = results.length
+                    ? '<div class="report-preview-empty" style="min-height:90px;">No onions detected in this sample.</div>'
+                    : '<div class="report-preview-empty" style="min-height:90px;">No AI detections available yet.</div>';
+                return;
+            }
+            const threshold = Number(results.find((item) => item.confidence_threshold !== undefined)?.confidence_threshold);
+            const confidenceThreshold = Number.isFinite(threshold) ? threshold : 0.25;
+            detectionRecords.innerHTML = detections.map((detection, index) => {
+                const size = detection.size || {};
+                const dimensions = Number.isFinite(Number(size.width_px)) && Number.isFinite(Number(size.height_px))
+                    ? `${Number(size.width_px).toFixed(1)} × ${Number(size.height_px).toFixed(1)} px`
+                    : 'Pixel dimensions unavailable';
+                const diameter = size.calibrated === true && Number.isFinite(Number(size.diameter_mm))
+                    ? `${Number(size.diameter_mm).toFixed(2)} mm`
+                    : 'Physical diameter unavailable';
+                const confidence = Number(detection.confidence) || 0;
+                const lowConfidenceNotice = confidence < confidenceThreshold
+                    ? '<span class="low-confidence">Low-confidence detection — human review recommended.</span>'
+                    : '';
+                return `<div class="detection-record"><span class="detection-swatch" style="background:${detectionColor(detection.class)}"></span><div><strong>Onion ${index + 1} · ${detection.class || 'unknown'}</strong><small style="display:block; color:#8f96ad;">Confidence: ${Math.round(confidence * 100)}% · ${dimensions} · Diameter: ${diameter}</small>${lowConfidenceNotice}</div><small style="color:#8f96ad;">Box: ${(detection.box || []).map((value) => Number(value).toFixed(1)).join(', ') || 'Unavailable'}</small></div>`;
+            }).join('');
+        }
+
+        function renderSizeMeasurement(results = []) {
+            const detections = results.flatMap((item) => item.detections || []);
+            const calibration = results.find((item) => item.calibration)?.calibration;
+            const calibrated = calibration && calibration.calibrated === true;
+            const scale = calibrated && Number.isFinite(Number(calibration.pixels_per_mm))
+                ? `${Number(calibration.pixels_per_mm).toFixed(4)} px/mm`
+                : null;
+            sizeCalibrationStatus.textContent = calibrated
+                ? `Calibrated · Pixels per mm: ${scale}`
+                : 'No calibration available. Add a reference measurement to calculate physical size.';
+            sizeCalibrationStatus.style.color = calibrated ? '#b9f7d2' : '#ffcf8a';
+            calibrationWorkflowStatus.textContent = calibrated
+                ? `Status: Calibrated · Pixels per mm: ${scale}`
+                : 'Status: Not calibrated';
+            calibrationWorkflowStatus.style.color = calibrated ? '#b9f7d2' : '#ffcf8a';
+
+            if (!detections.length) {
+                sizeMeasurements.innerHTML = '<div class="report-preview-empty" style="min-height:90px;">No measured onions yet.</div>';
+                return;
+            }
+
+            sizeMeasurements.innerHTML = detections.map((detection, index) => {
+                const size = detection.size || {};
+                const widthPx = Number.isFinite(Number(size.width_px)) ? `${Number(size.width_px).toFixed(2)} px` : 'Unavailable';
+                const heightPx = Number.isFinite(Number(size.height_px)) ? `${Number(size.height_px).toFixed(2)} px` : 'Unavailable';
+                const pixelDiameter = Number.isFinite(Number(size.diameter_px)) ? `${Number(size.diameter_px).toFixed(2)} px` : 'Unavailable';
+                const physicalDiameter = size.calibrated === true && Number.isFinite(Number(size.diameter_mm))
+                    ? `Approx. diameter: ${Number(size.diameter_mm).toFixed(2)} mm`
+                    : 'Calibration required';
+                return `<div class="onion-record">
+                    <strong>Detection ${index + 1} · ${detection.class || 'onion'}</strong>
+                    <small>Box: ${widthPx} × ${heightPx}<br>Diameter: ${pixelDiameter}</small>
+                    <small>${physicalDiameter}</small>
+                </div>`;
+            }).join('');
+        }
+
+        function updateModelCapabilities(capabilities) {
+            const individual = capabilities && capabilities.individual_onion_detection;
+            if (!individual || individual.available !== true) {
+                individualDetectionStatus.textContent = 'Individual onion detection model not yet available.';
+                individualDetectionStatus.style.color = '#ffcf8a';
+                renderOnionRecords([]);
+                return;
+            }
+
+            individualDetectionStatus.textContent = 'Individual onion detection model available. Onion IDs are temporary per inspection/image.';
+            individualDetectionStatus.style.color = '#b9f7d2';
+        }
+
+        function resetResultFields() {
+            document.getElementById('detectedOnionsResult').textContent = '—';
+            document.getElementById('damagedResult').textContent = 'N/A — model not trained';
+            document.getElementById('sproutedResult').textContent = 'N/A — model not trained';
+            document.getElementById('acceptableResult').textContent = 'N/A — model not trained';
+            document.getElementById('rotResult').textContent = 'N/A — model not trained';
+            document.getElementById('badOnionResult').textContent = 'No analysis yet';
+            document.getElementById('gradingResult').textContent = 'Grading: No verification completed';
+            updateFinalGradeDisplay();
+            document.getElementById('confidence').textContent = '—';
+            document.getElementById('onions').textContent = '0';
+            document.getElementById('inspections').textContent = String(state.history.length);
+            updateObservationLayer();
+            updateHumanVerification();
+            renderAnalytics();
+            updateInspectionSummary();
+            renderSizeMeasurement([]);
+        }
+
+        function renderHistory() {
+            const historyList = document.getElementById('historyList');
+            if (!state.history.length) {
+                historyList.innerHTML = '<div class="history-item"><div class="history-meta"><strong>No inspection history yet</strong><span class="subtitle">Successful inspections will appear here.</span></div></div>';
+                return;
+            }
+
+            historyList.innerHTML = state.history.map((entry) => {
+                const time = new Date(entry.timestamp).toLocaleString();
+                return `
+                    <div class="history-item" data-id="${entry.id}">
+                        <div class="history-meta">
+                            <strong>${entry.id}</strong>
+                            <span class="subtitle">${time}</span>
+                            <span class="subtitle">${entry.sampleSize || 'Unknown'} onions • ${entry.imagesUploaded} images • ${entry.detections} detected • ${entry.badOnions} bad • ${Math.round(Number(entry.confidence) || 0)}% confidence</span>
+                            <span class="subtitle">AI: ${entry.aiStatus || 'Analysis Complete'} • Verification: ${entry.verificationStatus || 'Pending'} • ${formatGradeMapping(entry.gradingResult || {})}</span>
+                        </div>
+                        <div class="history-status">${entry.verificationStatus || 'Pending'}</div>
+                    </div>
+                `;
+            }).join('');
+
+            historyList.querySelectorAll('.history-item').forEach((item) => {
+                item.addEventListener('click', async () => {
+                    const id = item.dataset.id;
+                    try {
+                        const response = await fetch(`/inspections/${encodeURIComponent(id)}`);
+                        const payload = await response.json();
+                        if (!response.ok || !payload.inspection) throw new Error(payload.error || 'Inspection details unavailable.');
+                        openReportModal(normalizeStoredInspection(payload.inspection));
+                    } catch (error) {
+                        setStatus(error.message || 'Inspection details unavailable.', true);
+                    }
+                });
+            });
+        }
+
+        function renderAnalytics() {
+            loadAnalyticsDashboard();
+        }
+
+        function updateApiStatus() {
+            const apiStatus = document.getElementById('apiStatus');
+            fetch('/', { method: 'GET' })
+                .then((response) => response.json())
+                .then((data) => {
+                    const aiAvailable = data && data.ai_model === 'loaded';
+                    apiStatus.textContent = aiAvailable ? 'Connected · AI ready' : 'Connected · AI unavailable';
+                    apiStatus.style.color = aiAvailable ? '#67e8a3' : '#ffcf8a';
+                    updateModelCapabilities(data && data.capabilities);
+                })
+                .catch(() => {
+                    apiStatus.textContent = 'Offline';
+                    apiStatus.style.color = '#ff8a8a';
+                });
+        }
+
+        function renderInspectionCardValues(inspection) {
+            const detections = Number(inspection.detections) || 0;
+            const confidence = Number(inspection.confidence) || 0;
+            const badOnions = Number(inspection.badOnions) || 0;
+            const badPercentage = detections > 0 ? Math.round((badOnions / detections) * 100) : 0;
+            document.getElementById('detectedOnionsResult').textContent = detections > 0 ? String(detections) : 'No onion detected';
+            document.getElementById('acceptableResult').textContent = 'N/A — model not trained';
+            document.getElementById('damagedResult').textContent = 'N/A — model not trained';
+            document.getElementById('rotResult').textContent = 'N/A — model not trained';
+            document.getElementById('sproutedResult').textContent = 'N/A — model not trained';
+            document.getElementById('badOnionResult').textContent = detections > 0
+                ? `${badOnions} detected, average confidence ${Math.round(confidence)}% (${badPercentage}% of detected onions)`
+                : 'No onion detected';
+            document.getElementById('gradingResult').textContent = `Grading: ${(inspection.gradingResult || {}).range || 'Pending human verification'}`;
+            updateFinalGradeDisplay(inspection.gradingResult || {});
+            document.getElementById('onions').textContent = String(inspection.individualOnions || 0);
+            document.getElementById('confidence').textContent = detections > 0 ? `${Math.round(confidence)}%` : '—';
+            document.getElementById('inspections').textContent = String(state.history.length);
+        }
+
+        function openReportModal(entry) {
+            if (!entry) {
+                reportContent.innerHTML = '<p>No report data available.</p>';
+                reportModal.classList.remove('hidden');
+                return;
+            }
+
+            currentReportId = entry.backendInspectionId || entry.inspection_id || entry.id;
+
+            const images = Array.isArray(entry.resultImages) && entry.resultImages.length ? entry.resultImages : [];
+            const time = new Date(entry.timestamp).toLocaleString();
+            const coverage = entry.sampleSize ? Math.min((Number(entry.individualOnions) / Number(entry.sampleSize)) * 100, 100) : 0;
+            const summaryHtml = images.length ? images.map((img) => `
+                <div class="report-box">
+                    <h4>${img.filename}</h4>
+                    <img src="${normalizeImageUrl(img.result_image)}" alt="${img.filename}" />
+                </div>
+            `).join('') : '<div class="report-box"><p>No annotated images available.</p></div>';
+
+            reportContent.innerHTML = `
+                <div class="report-grid">
+                    <div class="report-box">
+                        <h4>ONI-SCAN</h4>
+                        <p><strong>Inspection ID:</strong> ${entry.id}</p>
+                        <p><strong>Date/time:</strong> ${time}</p>
+                        <p><strong>Sample image:</strong> ${entry.sampleImageFilename || 'Not available'}</p>
+                        <p><strong>Sample Size:</strong> ${entry.sampleSize} onions</p>
+                        <p><strong>Images Uploaded:</strong> ${entry.imagesUploaded}</p>
+                        <p><strong>Onions Detected:</strong> ${entry.detections}</p>
+                        <p><strong>Coverage:</strong> ${Math.round(coverage)}%</p>
+                        <p><strong>Bad Onion Detections:</strong> ${entry.badOnions}</p>
+                        <p><strong>Average AI Confidence:</strong> ${Math.round(Number(entry.confidence) || 0)}%</p>
+                        <p><strong>AI Status:</strong> ${entry.aiStatus || 'Analysis Complete'}</p>
+                        <p><strong>AI Model:</strong> YOLO - bad-onion detector</p>
+                        <p><strong>Human Verification:</strong> ${entry.verificationStatus || 'Pending'}</p>
+                        <p><strong>Final Quality Grade:</strong> ${formatGradeMapping(entry.gradingResult || {})}</p>
+                        <p><strong>Official procurement range:</strong> ${(entry.gradingResult || {}).range || 'Pending human verification'}</p>
+                    </div>
+                    <div class="report-box">
+                        <h4>Inspection Details</h4>
+                        <p><strong>Current model:</strong> bad-onion detector</p>
+                        <p><strong>Unsupported categories:</strong> Acceptable N/A — model not trained; Damaged N/A — model not trained; Visible Rot N/A — model not trained; Sprouted N/A — model not trained</p>
+                        <p><strong>Important limitation:</strong> The current model detects bad-onion characteristics only. Defect-specific classifications and official grading thresholds are not enabled in the current prototype.</p>
+                        <p><strong>Grading:</strong> ${(entry.gradingResult || {}).range || (entry.gradingResult || {}).status || 'Pending verification'}</p>
+                    </div>
+                </div>
+                <div class="notice" style="margin-top:18px;">Multi-image counts represent detected instances. Duplicate onions across overlapping images may require human verification.</div>
+                <div class="gallery-grid" style="margin-top:18px;">${summaryHtml}</div>
+            `;
+            reportModal.classList.remove('hidden');
+        }
+
+        function clearHistory() {
+            if (!state.history.length) return;
+            if (!window.confirm('Clear inspection history?')) return;
+            state.history = [];
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(state.history));
+            renderHistory();
+            renderAnalytics();
+            updateDashboardCards();
+        }
+
+        function updateDashboardCards() {
+            loadAnalyticsDashboard();
+        }
+
+        function resetCurrentInspection() {
+            state.inspection = {
+                id: createInspectionId(),
+                backendInspectionId: null,
+                sampleSize: getSelectedSampleSize(),
+                images: [],
+                imageResults: [],
+                timestamp: null,
+                uploadedFilename: '',
+                detectedOnionCount: 0,
+                badOnionCount: 0,
+                averageConfidence: null,
+                aiStatus: 'Ready',
+                observations: createObservationLayer(),
+                gradingResult: gradeInspection({}),
+                humanVerifiedObservations: {},
+                verificationStatus: 'Pending',
+                errors: [],
+                teachableObservation: null
+            };
+
+            stopCamera();
+            imageInput.value = '';
+            imageInputBackup.value = '';
+            preview.src = '';
+            preview.style.display = 'none';
+            renderEvidence(null);
+            uploadContent.style.display = 'flex';
+            selectedImageSummary.textContent = 'No images selected yet.';
+            selectedImageSummary.style.color = '#dfe8ff';
+            gradingOutcome.textContent = 'No verification completed. Review AI observations before finalizing.';
+            finalizationStatus.textContent = '';
+            setWorkflowState('IDLE');
+            state.inspection.finalized = false;
+            setInspectionStatus('Ready');
+            setStatus('New inspection ready.');
+            updateReportActions();
+            renderResultGallery();
+            renderDetectionRecords([]);
+            updateInspectionSummary();
+            resetResultFields();
+        }
+
+        document.getElementById('sampleSizeSelect').addEventListener('change', () => {
+            if (sampleSizeSelect.value !== 'custom') {
+                customSampleSize.value = sampleSizeSelect.value;
+            }
+            updateSampleSize();
+        });
+
+        customSampleSize.addEventListener('input', () => {
+            if (Number(customSampleSize.value) > 0) {
+                sampleSizeSelect.value = 'custom';
+            }
+            updateSampleSize();
+        });
+
+        document.getElementById('newInspectionBtn').addEventListener('click', () => {
+            resetCurrentInspection();
+        });
+
+        openCameraBtn.addEventListener('click', () => startCamera('environment'));
+        switchCameraBtn.addEventListener('click', () => startCamera(cameraFacingMode === 'environment' ? 'user' : 'environment'));
+        captureCameraBtn.addEventListener('click', captureCameraImage);
+        closeCameraBtn.addEventListener('click', () => {
+            stopCamera();
+            cameraStatus.textContent = 'Camera inactive. Back Camera is preferred on supported devices.';
+        });
+
+        startDemoInspectionBtn.addEventListener('click', () => {
+            resetCurrentInspection();
+            document.getElementById('newInspectionSection')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+
+        loadDemoSampleBtn.addEventListener('click', loadDemoSample);
+
+        document.querySelectorAll('.nav button[data-target]').forEach((button) => {
+            button.addEventListener('click', () => {
+                document.querySelectorAll('.nav button').forEach((item) => item.classList.remove('active'));
+                button.classList.add('active');
+                document.getElementById(button.dataset.target)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+        });
+
+        document.getElementById('verifyInspectionBtn').addEventListener('click', submitVerifiedGrade);
+        document.getElementById('finalizeInspectionBtn').addEventListener('click', finalizeInspection);
+
+        document.getElementById('clearHistoryBtn')?.addEventListener('click', clearHistory);
+
+        imageInput.addEventListener('change', () => {
+            const files = Array.from(imageInput.files || []);
+            state.inspection.images = files;
+            state.inspection.errors = [];
+            state.inspection.imageResults = [];
+            state.inspection.backendInspectionId = null;
+            state.inspection.verificationStatus = 'Pending';
+            state.inspection.workflowState = files.length ? 'IMAGE READY' : 'IDLE';
+            state.inspection.finalized = false;
+            state.inspection.timestamp = null;
+            state.inspection.uploadedFilename = '';
+            state.inspection.detectedOnionCount = 0;
+            state.inspection.badOnionCount = 0;
+            state.inspection.averageConfidence = null;
+            state.inspection.aiStatus = 'Ready';
+            state.inspection.observations = createObservationLayer();
+            state.inspection.gradingResult = gradingEngine.assess(buildGradingInput());
+            state.inspection.humanVerifiedObservations = {};
+            state.inspection.teachableObservation = null;
+            gradingOutcome.textContent = 'No verification completed. Review AI observations before finalizing.';
+            finalizationStatus.textContent = '';
+            setWorkflowState(state.inspection.workflowState);
+            renderSelectedFilesSummary();
+            renderResultGallery();
+            renderOnionRecords([]);
+            renderDetectionRecords([]);
+            renderSizeMeasurement([]);
+            renderEvidence(null);
+
+            if (files.length) {
+                const firstFile = files[0];
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    preview.src = event.target.result;
+                    originalEvidenceImage.src = event.target.result;
+                    preview.style.display = 'block';
+                    uploadContent.style.display = 'none';
+                    preview.onload = () => {
+                        drawDetectionOverlay();
+                        updateTeachableObservation(preview);
+                    };
+                };
+                reader.readAsDataURL(firstFile);
+            }
+
+            updateInspectionSummary();
+            setStatus(`${files.length} image${files.length === 1 ? '' : 's'} selected. Ready for inspection.`);
+        });
+
+        imageInputBackup.addEventListener('change', () => {
+            imageInput.files = imageInputBackup.files;
+            imageInput.dispatchEvent(new Event('change'));
+        });
+
+        window.addEventListener('resize', drawDetectionOverlay);
+
+        scanButton.addEventListener('click', async function () {
+            if (scanButton.disabled) return;
+            const files = Array.from(imageInput.files || []);
+            if (!files.length) {
+                setInspectionStatus('Ready');
+                setStatus('Please upload one or more onion images first.', true);
+                return;
+            }
+
+            state.inspection.sampleSize = getSelectedSampleSize();
+            state.inspection.images = files;
+            state.inspection.imageResults = [];
+            state.inspection.errors = [];
+            state.inspection.backendInspectionId = null;
+            state.inspection.verificationStatus = 'Pending';
+            state.inspection.timestamp = new Date().toISOString();
+            state.inspection.uploadedFilename = files.map((file) => file.name).join(', ');
+            state.inspection.aiStatus = 'Analyzing';
+            state.inspection.workflowState = 'ANALYZING';
+            state.inspection.finalized = false;
+            state.inspection.observations = createObservationLayer();
+            state.inspection.gradingResult = gradingEngine.assess(buildGradingInput());
+            state.inspection.humanVerifiedObservations = {};
+            state.inspection.teachableObservation = null;
+            gradingOutcome.textContent = 'No verification completed. Review AI observations before finalizing.';
+            finalizationStatus.textContent = '';
+
+            setScanState(true);
+            setInspectionStatus('Analyzing');
+            resetResultFields();
+            const imageResults = [];
+            let totalDetections = 0;
+            let totalConfidence = 0;
+            let totalBadOnions = 0;
+
+            for (let index = 0; index < files.length; index += 1) {
+                const file = files[index];
+                setStatus(`Analyzing image ${index + 1} of ${files.length}...`);
+                const formData = new FormData();
+                formData.append('file', file, file.name);
+                const knownWidthMm = Number(referenceWidthMm.value);
+                const measuredWidthPx = Number(referenceWidthPx.value);
+                if (Number.isFinite(knownWidthMm) && knownWidthMm > 0) formData.append('reference_width_mm', String(knownWidthMm));
+                if (Number.isFinite(measuredWidthPx) && measuredWidthPx > 0) formData.append('reference_width_px', String(measuredWidthPx));
+
+                try {
+                    const response = await fetch('/analyze', { method: 'POST', body: formData });
+                    let payload = null;
+                    try {
+                        payload = await response.json();
+                    } catch (jsonError) {
+                        throw new Error('The server responded with invalid JSON.');
+                    }
+
+                    if (!response.ok || !payload || payload.success !== true) {
+                        const message = payload && payload.error ? payload.error : 'AI analysis failed.';
+                        throw new Error(message);
+                    }
+
+                    const detections = Array.isArray(payload.detections) ? payload.detections : [];
+                    const badOnions = detections.filter((item) => String(item.class).toLowerCase() === 'bad-onion').length;
+                    const imageConfidence = detections.reduce((sum, item) => sum + (Number(item.confidence) || 0), 0);
+                    totalDetections += detections.length;
+                    totalBadOnions += badOnions;
+                    totalConfidence += imageConfidence;
+
+                    const resultItem = {
+                        filename: file.name,
+                        inspection_id: payload.inspection_id || null,
+                        result_image: payload.result_image || '',
+                        annotated_image: payload.annotated_image || payload.result_image || '',
+                        confidence_threshold: payload.confidence_threshold,
+                        detections,
+                        count: detections.length,
+                        badOnions,
+                        confidence: detections.length ? imageConfidence / detections.length : 0,
+                        individual_onions: Array.isArray(payload.individual_onions) ? payload.individual_onions : [],
+                        calibration: payload.calibration || null,
+                    };
+
+                    imageResults.push(resultItem);
+                    if (!state.inspection.backendInspectionId && payload.inspection_id) {
+                        state.inspection.backendInspectionId = payload.inspection_id;
+                    }
+                    state.inspection.imageResults = imageResults;
+                    renderResultGallery();
+                    if (imageResults.length === 1) renderEvidence(resultItem);
+                    renderOnionRecords(imageResults.flatMap((item) => item.individual_onions || []));
+                    renderDetectionRecords(imageResults);
+                    renderSizeMeasurement(imageResults);
+                    drawDetectionOverlay();
+                    updateModelCapabilities(payload.capabilities);
+                    updateInspectionSummary();
+                    setStatus(`Image ${index + 1} completed successfully.`);
+                } catch (error) {
+                    state.inspection.errors.push({ file: file.name, error: error.message || 'Image analysis failed.' });
+                    setStatus(`Image ${index + 1} failed: ${error.message || 'Image analysis failed.'}`, true);
+                }
+            }
+
+            setScanState(false);
+
+            const avgConfidence = totalDetections > 0 ? (totalConfidence / totalDetections) * 100 : 0;
+            const individualOnions = imageResults.flatMap((item) => item.individual_onions || []).length;
+            const coveragePercent = state.inspection.sampleSize > 0 ? Math.min((individualOnions / state.inspection.sampleSize) * 100, 100) : 0;
+
+            if (!imageResults.length) {
+                state.inspection.aiStatus = 'Analysis Failed';
+                setWorkflowState('ANALYSIS FAILED');
+                updateInspectionSummary();
+                setInspectionStatus('Analysis Failed');
+                setStatus('No images were successfully analyzed. Please check the uploaded files and server status.', true);
+                return;
+            }
+
+            const inspectionEntry = {
+                id: state.inspection.id,
+                timestamp: state.inspection.timestamp,
+                sampleImageFilename: state.inspection.uploadedFilename,
+                sampleSize: Number(state.inspection.sampleSize) || 50,
+                imagesUploaded: files.length,
+                detections: totalDetections,
+                individualOnions,
+                badOnions: totalBadOnions,
+                confidence: avgConfidence,
+                aiStatus: state.inspection.errors.length ? 'Analysis Failed' : 'Analysis Complete',
+                defectObservations: state.inspection.observations.visible_defects,
+                sizeObservations: state.inspection.observations.size,
+                gradingResult: gradingEngine.assess({
+                    detected_count: totalDetections,
+                    bad_onion_count: totalBadOnions,
+                    visible_defects: state.inspection.observations.visible_defects,
+                    size_measurements: state.inspection.observations.size
+                }),
+                verificationStatus: 'Pending',
+                humanVerificationStatus: 'Pending',
+                reviewerConfirmation: 'Required',
+                resultImages: imageResults.map((item) => ({
+                    filename: item.filename,
+                    result_image: item.result_image,
+                })),
+                backendInspectionId: imageResults[0]?.inspection_id || null,
+                errors: state.inspection.errors
+            };
+
+            inspectionEntry.reportData = {
+                inspection_id: inspectionEntry.id,
+                date_time: inspectionEntry.timestamp,
+                sample_image_filename: inspectionEntry.sampleImageFilename,
+                detected_onion_count: inspectionEntry.detections,
+                defect_observations: inspectionEntry.defectObservations,
+                size_observations: inspectionEntry.sizeObservations,
+                ai_confidence: inspectionEntry.confidence,
+                grading_result: inspectionEntry.gradingResult,
+                human_verification_status: inspectionEntry.humanVerificationStatus
+            };
+            state.inspection.aiStatus = inspectionEntry.aiStatus;
+            state.inspection.gradingResult = inspectionEntry.gradingResult;
+            setWorkflowState(imageResults.some((item) => item.calibration?.calibrated) ? 'CALIBRATED' : 'CALIBRATION REQUIRED');
+
+            state.history = [inspectionEntry, ...state.history].slice(0, 20);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(state.history));
+            state.inspection.verificationStatus = 'Pending';
+
+            renderHistory();
+            renderAnalytics();
+            updateInspectionSummary();
+            renderInspectionCardValues(inspectionEntry);
+            updateReportActions();
+            reportPreview.innerHTML = `<strong>Latest inspection:</strong> ${inspectionEntry.id}<br><span class="subtitle">${new Date(inspectionEntry.timestamp).toLocaleString()}</span>`;
+
+            if (coveragePercent >= 100) {
+                setStatus(`Inspection complete. Sample coverage is ${Math.round(coveragePercent)}%.`);
+            } else {
+                setStatus(`Inspection complete. ${totalDetections} defect detection${totalDetections === 1 ? '' : 's'} across ${files.length} images. Individual onion coverage is unavailable.`);
+            }
+            setInspectionStatus('Analysis Complete');
+
+            if (state.inspection.errors.length) {
+                setInspectionStatus('Analysis Failed');
+                setStatus(`Inspection completed with ${state.inspection.errors.length} failed image${state.inspection.errors.length === 1 ? '' : 's'}.`, true);
+            }
+        });
+
+        document.getElementById('openReportBtn').addEventListener('click', () => {
+            const latest = state.history.find((entry) => entry.backendInspectionId || entry.inspection_id);
+            openReportModal(latest || null);
+        });
+
+        document.getElementById('downloadReportBtn').addEventListener('click', () => {
+            const latest = state.history.find((entry) => entry.backendInspectionId || entry.inspection_id);
+            downloadInspectionReport(latest && (latest.backendInspectionId || latest.inspection_id || latest.id));
+        });
+
+        document.getElementById('downloadModalReportBtn').addEventListener('click', () => {
+            downloadInspectionReport(currentReportId);
+        });
+
+        document.getElementById('closeReportBtn').addEventListener('click', () => {
+            reportModal.classList.add('hidden');
+        });
+
+        document.getElementById('printReportBtn').addEventListener('click', () => {
+            window.print();
+        });
+
+        sampleSizeSelect.value = '50';
+        customSampleSize.value = '50';
+        state.inspection.sampleSize = 50;
+        renderHistory();
+        renderAnalytics();
+        updateApiStatus();
+        resetResultFields();
+        updateInspectionSummary();
+        renderResultGallery();
+        updateReportActions();
+        loadDemoSamples();
+        loadBackendHistory();
+    </script>
+</body>
+</html>
