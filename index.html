@@ -718,6 +718,18 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8/dist/teachablemachine-image.min.js"></script>
     <script>
+        const BACKEND_URL = window.ONISCAN_BACKEND_URL || 'https://oniscan.onrender.com';
+
+        function apiUrl(path = '') {
+            if (!path) return BACKEND_URL;
+            if (/^https?:\/\//i.test(path) || path.startsWith('data:') || path.startsWith('blob:')) {
+                return path;
+            }
+            const cleanBase = BACKEND_URL.replace(/\/+$/, '');
+            const cleanPath = path.startsWith('/') ? path : `/${path}`;
+            return `${cleanBase}${cleanPath}`;
+        }
+
         const STORAGE_KEY = 'oni_scan_history_v1';
         const TEACHABLE_MACHINE_MODEL_URL = 'https://teachablemachine.withgoogle.com/models/ccjAXmfJp/';
         const state = {
@@ -840,13 +852,13 @@
                 gradingResult,
                 uiGrade: formatGradeMapping(gradingResult),
                 sampleImageFilename: record.uploaded_filename,
-                resultImages: record.result_image ? [{ filename: record.uploaded_filename, result_image: record.result_image }] : []
+                resultImages: record.result_image ? [{ filename: record.uploaded_filename, result_image: normalizeImageUrl(record.result_image) }] : []
             };
         }
 
         async function loadBackendHistory() {
             try {
-                const response = await fetch('/inspections');
+                const response = await fetch(apiUrl('/inspections'));
                 const payload = await response.json();
                 if (!response.ok || payload.success !== true) throw new Error(payload.error || 'Inspection history unavailable.');
                 if (Array.isArray(payload.inspections) && payload.inspections.length) {
@@ -862,14 +874,14 @@
 
         async function loadDemoSamples() {
             try {
-                const response = await fetch('/demo-samples');
+                const response = await fetch(apiUrl('/demo-samples'));
                 const payload = await response.json();
                 if (!response.ok || payload.success !== true) throw new Error('Sample images unavailable.');
                 const samples = Array.isArray(payload.samples) ? payload.samples : [];
                 demoSampleSelect.innerHTML = '<option value="">Choose an existing test image</option>';
                 samples.forEach((sample) => {
                     const option = document.createElement('option');
-                    option.value = sample.url;
+                    option.value = apiUrl(sample.url);
                     option.textContent = sample.name;
                     option.dataset.filename = sample.name;
                     demoSampleSelect.appendChild(option);
@@ -892,7 +904,7 @@
             try {
                 loadDemoSampleBtn.disabled = true;
                 setStatus('Loading real sample image...');
-                const response = await fetch(option.value);
+                const response = await fetch(apiUrl(option.value));
                 if (!response.ok) throw new Error('The selected sample image is unavailable.');
                 const blob = await response.blob();
                 const file = new File([blob], option.dataset.filename || 'onion-sample.jpg', { type: blob.type || 'image/jpeg' });
@@ -1093,7 +1105,7 @@
 
         async function loadAnalyticsDashboard() {
             try {
-                const response = await fetch('/analytics');
+                const response = await fetch(apiUrl('/analytics'));
                 const data = await response.json();
                 if (!response.ok || data.success !== true) throw new Error(data.error || 'Analytics unavailable.');
                 renderAnalyticsData(data);
@@ -1108,7 +1120,7 @@
                 return;
             }
             try {
-                const response = await fetch(`/inspections/${encodeURIComponent(inspectionId)}/report`);
+                const response = await fetch(apiUrl(`/inspections/${encodeURIComponent(inspectionId)}/report`));
                 if (!response.ok) {
                     let message = 'The inspection report could not be generated.';
                     try { message = (await response.json()).error || message; } catch (error) { }
@@ -1275,7 +1287,7 @@
                 selected_range: document.getElementById('verifiedRange').value || null
             };
             try {
-                const response = await fetch('/grade', {
+                const response = await fetch(apiUrl('/grade'), {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -1329,7 +1341,7 @@
                 return;
             }
             try {
-                const response = await fetch(`/inspections/${encodeURIComponent(inspectionId)}/finalize`, { method: 'POST' });
+                const response = await fetch(apiUrl(`/inspections/${encodeURIComponent(inspectionId)}/finalize`), { method: 'POST' });
                 const payload = await response.json();
                 if (!response.ok || payload.success !== true) throw new Error(payload.error || 'Inspection finalization failed.');
                 state.inspection.finalized = true;
@@ -1412,7 +1424,7 @@
             if (/^https?:\/\//i.test(url) || url.startsWith('data:') || url.startsWith('blob:')) {
                 return url;
             }
-            return `${window.location.origin}${url.startsWith('/') ? url : '/' + url}`;
+            return apiUrl(url);
         }
 
         function renderEvidence(result = null) {
@@ -1681,7 +1693,7 @@
                 item.addEventListener('click', async () => {
                     const id = item.dataset.id;
                     try {
-                        const response = await fetch(`/inspections/${encodeURIComponent(id)}`);
+                        const response = await fetch(apiUrl(`/inspections/${encodeURIComponent(id)}`));
                         const payload = await response.json();
                         if (!response.ok || !payload.inspection) throw new Error(payload.error || 'Inspection details unavailable.');
                         openReportModal(normalizeStoredInspection(payload.inspection));
@@ -1698,7 +1710,7 @@
 
         function updateApiStatus() {
             const apiStatus = document.getElementById('apiStatus');
-            fetch('/', { method: 'GET' })
+            fetch(apiUrl('/'), { method: 'GET' })
                 .then((response) => response.json())
                 .then((data) => {
                     const aiAvailable = data && data.ai_model === 'loaded';
@@ -1989,7 +2001,7 @@
                 if (Number.isFinite(measuredWidthPx) && measuredWidthPx > 0) formData.append('reference_width_px', String(measuredWidthPx));
 
                 try {
-                    const response = await fetch('/analyze', { method: 'POST', body: formData });
+                    const response = await fetch(apiUrl('/analyze'), { method: 'POST', body: formData });
                     let payload = null;
                     try {
                         payload = await response.json();
@@ -2012,8 +2024,8 @@
                     const resultItem = {
                         filename: file.name,
                         inspection_id: payload.inspection_id || null,
-                        result_image: payload.result_image || '',
-                        annotated_image: payload.annotated_image || payload.result_image || '',
+                        result_image: normalizeImageUrl(payload.result_image || ''),
+                        annotated_image: normalizeImageUrl(payload.annotated_image || payload.result_image || ''),
                         confidence_threshold: payload.confidence_threshold,
                         detections,
                         count: detections.length,
